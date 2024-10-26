@@ -1,6 +1,5 @@
-# bin
-Main
-main
+# folders
+bin/
 
 # ext
 *.hi
