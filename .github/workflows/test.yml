@@ -20,3 +20,12 @@ jobs:
 
       - name: Build the Programs
         run: make
+
+      - name: Run the Tests
+        working-directory: build
+        run: make test
+
+      - name: Upload Coverage Reports
+        uses: codecov/codecov-action@v4.0.1
+        with:
+          token: ${{secrets.CODECOV_TOKEN}}
