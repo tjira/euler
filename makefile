@@ -36,5 +36,5 @@ test:
 	@for BIN in $$(ls bin); do \
 		EXPECTED_OUTPUT=$$(echo $(RESULTS) | cut -d " " -f $$(echo $$BIN | cut -d "-" -f 2)); S_TIME=$$(date +%s%N); ACTUAL_OUTPUT=$$(./bin/$$BIN); \
 		E_TIME=$$(date +%s%N); if [ $$ACTUAL_OUTPUT != $$EXPECTED_OUTPUT ]; then FAIL=1; COLOUR="\033[0;31m"; else FAIL=0; COLOUR="\033[0;32m"; fi; \
-		echo -e "$$COLOUR$$BIN: ACTUAL=$$ACTUAL_OUTPUT, EXPECTED=$$EXPECTED_OUTPUT, TIME=$$(((E_TIME - S_TIME) / 1000000))ms\033[0m"; \
+		printf "$$COLOUR$$BIN: ACTUAL=$$ACTUAL_OUTPUT, EXPECTED=$$EXPECTED_OUTPUT, TIME=$$(((E_TIME - S_TIME) / 1000000))ms\033[0m\n"; \
 	done && if [ $$FAIL == 1 ]; then exit 1; fi
