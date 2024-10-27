@@ -22,7 +22,6 @@ jobs:
         run: make
 
       - name: Run the Tests
-        working-directory: build
         run: make test
 
       - name: Upload Coverage Reports
