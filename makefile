@@ -1,5 +1,7 @@
 .PHONY: all clean
 
+SHELL:=/bin/bash
+
 RESULTS = \
     233168 \
 	4613732 \
