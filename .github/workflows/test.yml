@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Necessary Packages
-        run: sudo snap install zig
+        run: sudo snap install zig --edge
 
       - name: Build the Programs
         run: make
