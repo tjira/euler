@@ -10,11 +10,13 @@ RESULTS = \
 
 C       := $(shell cd src/c       && ls)
 CPP     := $(shell cd src/cpp     && ls)
+GO      := $(shell cd src/go      && ls)
 HASKELL := $(shell cd src/haskell && ls)
 PYTHON  := $(shell cd src/python  && ls)
 RUST    := $(shell cd src/rust    && ls)
+ZIG     := $(shell cd src/zig     && ls)
 
-all: init $(C:%=bin/c-%) $(CPP:%=bin/cpp-%) $(HASKELL:%=bin/haskell-%) $(PYTHON:%=bin/python-%) $(RUST:%=bin/rust-%)
+all: init $(C:%=bin/c-%) $(CPP:%=bin/cpp-%) $(GO:%=bin/go-%) $(HASKELL:%=bin/haskell-%) $(PYTHON:%=bin/python-%) $(RUST:%=bin/rust-%) $(ZIG:%=bin/zig-%)
 
 init:
 	@mkdir -p bin
@@ -25,6 +27,9 @@ bin/c-%: src/c/%/main.c
 bin/cpp-%: src/cpp/%/main.cpp
 	g++ -o $@ $<
 
+bin/go-%: src/go/%/main.go
+	go build -o $@ $<
+
 bin/haskell-%: src/haskell/%/main.hs
 	ghc -o $@ $<
 
@@ -33,6 +38,9 @@ bin/python-%: src/python/%/main.py
 
 bin/rust-%: src/rust/%/main.rs
 	rustc -o $@ $<
+
+bin/zig-%: src/zig/%/main.zig
+	zig build-exe -femit-bin=$@ $< && rm $@.o
 
 test:
 	@for BIN in $$(ls bin); do \
