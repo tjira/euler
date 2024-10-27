@@ -21,22 +21,22 @@ init:
 	@mkdir -p bin
 
 bin/c-%: src/c/%/main.c
-	gcc -o $@ $<
+	gcc -O3 -o $@ $<
 
 bin/cpp-%: src/cpp/%/main.cpp
-	g++ -o $@ $<
+	g++ -O3 -o $@ $<
 
 bin/go-%: src/go/%/main.go
 	go build -o $@ $<
 
 bin/haskell-%: src/haskell/%/main.hs
-	ghc -o $@ $<
+	ghc -O3 -o $@ $<
 
 bin/python-%: src/python/%/main.py
 	cp $< $@
 
 bin/rust-%: src/rust/%/main.rs
-	rustc -o $@ $<
+	rustc -C opt-level=3 -o $@ $<
 
 test:
 	@for BIN in $$(ls bin); do \
