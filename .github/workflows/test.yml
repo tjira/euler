@@ -15,9 +15,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Zig
-        run: sudo snap install zig --edge --classic
-
       - name: Build the Programs
         run: make
 
