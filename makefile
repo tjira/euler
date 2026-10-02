@@ -11,7 +11,8 @@ BIN_DIR   := bin
 ARCH := $(if $(filter $(OS),Windows_NT),x86_64,$(shell uname -m | tr '[:upper:]' '[:lower:]' | sed 's/arm64/aarch64/'))
 OS   := $(if $(filter $(OS),Windows_NT),windows,$(shell uname -s | tr '[:upper:]' '[:lower:]' | sed 's/darwin/macos/'))
 
-ZIG_VERSION := 0.16.0
+ZIG_VERSION  := 0.16.0
+RUST_VERSION := 1.99.0
 
 CC          := gcc
 CFLAGS      := -O3
@@ -115,11 +116,12 @@ $(TESTS): test-%: $(BIN_DIR)/%
 
 # COMPILER DOWNLOAD TARGETS ====================================================================================================================================
 
-$(RUSTC) $(RUSTFMT):
 ifeq ($(OS),windows)
-	@curl.exe -sSf -o rustup-init.exe https://win.rustup.rs/x86_64 && ./rustup-init.exe -y --no-modify-path && rm rustup-init.exe
+$(RUSTC) $(RUSTFMT):
+	@curl.exe -L# -o rustup-init.exe https://win.rustup.rs/$(ARCH) ; ./rustup-init.exe -y --default-toolchain $(RUST_VERSION) --no-modify-path ; rm rustup-init.exe
 else
-	@curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
+$(RUSTC) $(RUSTFMT):
+	@curl -L# https://sh.rustup.rs | sh -s -- -y --default-toolchain $(RUST_VERSION) --no-modify-path
 endif
 
 ifeq ($(OS),windows)
