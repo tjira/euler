@@ -1,46 +1,60 @@
-.PHONY: all clean
+.PHONY: all clean test
 
-SHELL:=/bin/bash
+SHELL := /bin/bash
+
+BUILD_DIR ?= build
+BIN_DIR   ?= bin
+
+CC          ?= gcc
+CFLAGS      ?= -O3
+CXX         ?= g++
+CXXFLAGS    ?= -O3
+GHC         ?= ghc
+GHCFLAGS    ?= -O3
+RUSTC       ?= rustc
+RUSTFLAGS   ?= -C opt-level=3
+GO          ?= go
+GOFLAGS     ?=
+PYTHON      ?= python3
+PYTHONFLAGS ?=
 
 RESULTS = \
     233168 \
-	4613732 \
-	6857 \
-	906609 \
+    4613732 \
+    6857 \
+    906609
 
-C       := $(shell cd src/c       && ls)
-CPP     := $(shell cd src/cpp     && ls)
-GO      := $(shell cd src/go      && ls)
-HASKELL := $(shell cd src/haskell && ls)
-PYTHON  := $(shell cd src/python  && ls)
-RUST    := $(shell cd src/rust    && ls)
+TESTS := $(subst /,-,$(patsubst src/%/,test-%,$(dir $(wildcard src/*/*/main.*))))
 
-all: init $(C:%=bin/c-%) $(CPP:%=bin/cpp-%) $(GO:%=bin/go-%) $(HASKELL:%=bin/haskell-%) $(PYTHON:%=bin/python-%) $(RUST:%=bin/rust-%)
+.PHONY: $(TESTS)
 
-init:
-	@mkdir -p bin
+all: $(TESTS:test-%=$(BIN_DIR)/%)
 
-bin/c-%: src/c/%/main.c
-	gcc -O3 -o $@ $<
+$(BUILD_DIR) $(BIN_DIR):
+	@mkdir -p $@
 
-bin/cpp-%: src/cpp/%/main.cpp
-	g++ -O3 -o $@ $<
+$(BIN_DIR)/c-%: src/c/%/main.c | $(BIN_DIR)
+	$(CC) $(CFLAGS) -o $@ $<
 
-bin/go-%: src/go/%/main.go
-	go build -o $@ $<
+$(BIN_DIR)/cpp-%: src/cpp/%/main.cpp | $(BIN_DIR)
+	$(CXX) $(CXXFLAGS) -o $@ $<
 
-bin/haskell-%: src/haskell/%/main.hs
-	ghc -O3 -o $@ $<
+$(BIN_DIR)/go-%: src/go/%/main.go | $(BIN_DIR)
+	$(GO) build $(GOFLAGS) -o $@ $<
 
-bin/python-%: src/python/%/main.py
-	cp $< $@
+$(BIN_DIR)/haskell-%: src/haskell/%/main.hs | $(BUILD_DIR) $(BIN_DIR)
+	$(GHC) $(GHCFLAGS) -outputdir $(BUILD_DIR)/.ghc-$* -o $@ $<
 
-bin/rust-%: src/rust/%/main.rs
-	rustc -C opt-level=3 -o $@ $<
+$(BIN_DIR)/python-%: src/python/%/main.py | $(BIN_DIR)
+	cp $< $@ && chmod +x $@
 
-test:
-	@for BIN in $$(ls bin); do \
-		EXPECTED_OUTPUT=$$(echo $(RESULTS) | cut -d " " -f $$(echo $$BIN | cut -d "-" -f 2)); S_TIME=$$(date +%s%N); ACTUAL_OUTPUT=$$(./bin/$$BIN); \
-		E_TIME=$$(date +%s%N); if [ $$ACTUAL_OUTPUT != $$EXPECTED_OUTPUT ]; then FAIL=1; COLOUR="\033[0;31m"; else FAIL=0; COLOUR="\033[0;32m"; fi; \
-		printf "$$COLOUR$$BIN: ACTUAL=$$ACTUAL_OUTPUT, EXPECTED=$$EXPECTED_OUTPUT, TIME=$$(((E_TIME - S_TIME) / 1000000))ms\033[0m\n"; \
-	done && if [ $$FAIL == 1 ]; then exit 1; fi
+$(BIN_DIR)/rust-%: src/rust/%/main.rs | $(BIN_DIR)
+	$(RUSTC) $(RUSTFLAGS) -o $@ $<
+
+test: $(TESTS)
+
+$(TESTS): test-%: $(BIN_DIR)/%
+	@[ "$$($<)" = "$(word $(lastword $(subst -, ,$*)),$(RESULTS))" ] && printf "\033[0;32mPASS %s\033[0m\n" "$<" || { printf "\033[0;31mFAIL %s\033[0m\n" "$<"; exit 1; }
+
+clean:
+	@rm -rf $(BUILD_DIR) $(BIN_DIR)
