@@ -14,9 +14,6 @@
     <a href="https://github.com/tjira/euler">
         <img src="https://img.shields.io/github/languages/code-size/tjira/euler?style=for-the-badge"/>
     </a>
-    <a href="https://app.codecov.io/gh/tjira/euler">
-        <img src="https://img.shields.io/codecov/c/github/tjira/euler?style=for-the-badge"/>
-    </a>
     <a href="https://github.com/tjira/euler/stargazers">
         <img src="https://img.shields.io/github/stars/tjira/euler?style=for-the-badge"/>
     </a>

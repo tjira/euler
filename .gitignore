@@ -2,6 +2,10 @@
 .zig-bin/
 .rust-bin/
 .cargo-bin/
+.ghcup/
+ghcup/
+.cabal-bin/
+.stack-bin/
 
 build/
 bin/
