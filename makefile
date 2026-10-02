@@ -1,4 +1,4 @@
-.PHONY: all clean test
+.PHONY: all clean test format
 
 SHELL := /bin/bash
 
@@ -18,6 +18,14 @@ GOFLAGS     ?=
 PYTHON      ?= python3
 PYTHONFLAGS ?=
 
+CLANG_FORMAT ?= clang-format
+GOFMT        ?= gofmt
+ORMOLU       ?= ormolu
+RUFF         ?= ruff
+RUSTFMT      ?= rustfmt
+
+FORMATS := $(patsubst src/%/,format-%,$(dir $(wildcard src/*/)))
+
 RESULTS = \
     233168 \
     4613732 \
@@ -26,12 +34,11 @@ RESULTS = \
 
 TESTS := $(subst /,-,$(patsubst src/%/,test-%,$(dir $(wildcard src/*/*/main.*))))
 
-.PHONY: $(TESTS)
+.PHONY: $(FORMATS) $(TESTS)
 
 all: $(TESTS:test-%=$(BIN_DIR)/%)
 
-$(BUILD_DIR) $(BIN_DIR):
-	@mkdir -p $@
+# BUILD TARGETS ================================================================================================================================================
 
 $(BIN_DIR)/c-%: src/c/%/main.c | $(BIN_DIR)
 	$(CC) $(CFLAGS) -o $@ $<
@@ -51,10 +58,39 @@ $(BIN_DIR)/python-%: src/python/%/main.py | $(BIN_DIR)
 $(BIN_DIR)/rust-%: src/rust/%/main.rs | $(BIN_DIR)
 	$(RUSTC) $(RUSTFLAGS) -o $@ $<
 
+# FORMAT TARGETS ===============================================================================================================================================
+
+format: $(FORMATS)
+
+format-c:
+	$(CLANG_FORMAT) -i src/c/*/*.c
+
+format-cpp:
+	$(CLANG_FORMAT) -i src/cpp/*/*.cpp
+
+format-go:
+	$(GOFMT) -w src/go/*/*.go
+
+format-haskell:
+	$(ORMOLU) --mode inplace src/haskell/*/*.hs
+
+format-python:
+	$(RUFF) format src/python/*/*.py
+
+format-rust:
+	$(RUSTFMT) src/rust/*/*.rs
+
+# TEST TARGETS =================================================================================================================================================
+
 test: $(TESTS)
 
 $(TESTS): test-%: $(BIN_DIR)/%
 	@[ "$$($<)" = "$(word $(lastword $(subst -, ,$*)),$(RESULTS))" ] && printf "\033[0;32mPASS %s\033[0m\n" "$<" || { printf "\033[0;31mFAIL %s\033[0m\n" "$<"; exit 1; }
+
+# AUXILIARY TARGETS ============================================================================================================================================
+
+$(BUILD_DIR) $(BIN_DIR):
+	@mkdir -p $@
 
 clean:
 	@rm -rf $(BUILD_DIR) $(BIN_DIR)

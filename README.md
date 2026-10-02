@@ -11,13 +11,22 @@
         <img src="https://img.shields.io/github/actions/workflow/status/tjira/euler/test.yml?style=for-the-badge&label=test"/>
     </a>
     <br>
+    <a href="https://github.com/tjira/euler">
+        <img src="https://img.shields.io/github/languages/code-size/tjira/euler?style=for-the-badge"/>
+    </a>
     <a href="https://app.codecov.io/gh/tjira/euler">
         <img src="https://img.shields.io/codecov/c/github/tjira/euler?style=for-the-badge"/>
     </a>
     <a href="https://github.com/tjira/euler/stargazers">
         <img src="https://img.shields.io/github/stars/tjira/euler?style=for-the-badge"/>
     </a>
-    <a href="https://github.com/tjira/euler">
-        <img src="https://img.shields.io/github/languages/code-size/tjira/euler?style=for-the-badge"/>
-    </a>
+    <br>
 </p>
+
+<p align="center">
+Solutions to Project Euler problems implemented in multiple programming languages.
+</p>
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE.md](LICENSE.md) for details.
