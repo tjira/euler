@@ -2,6 +2,9 @@
 
 SHELL := /bin/bash
 
+export RUSTUP_HOME := $(CURDIR)/.rust-bin
+export CARGO_HOME  := $(CURDIR)/.cargo-bin
+
 BUILD_DIR := build
 BIN_DIR   := bin
 
@@ -22,17 +25,17 @@ GO          := go
 GOFLAGS     :=
 PYTHON      := python3
 PYTHONFLAGS :=
-RUSTC       := rustc
+RUSTC       := ./.cargo-bin/bin/rustc$(if $(filter $(OS),windows),.exe)
 RUSTFLAGS   := -C opt-level=3
 ZIG         := ./.zig-bin/zig$(if $(filter $(OS),windows),.exe)
 ZIGFLAGS    := -O ReleaseFast
 
 CLANG_FORMAT := clang-format
-FPRETTIFY    := fprettify
+FPRETTIFY    := $(if $(filter $(OS),windows),.venv/Scripts/fprettify.exe,.venv/bin/fprettify)
 GOFMT        := gofmt
 ORMOLU       := ormolu
-RUFF         := ruff
-RUSTFMT      := rustfmt
+RUFF         := $(if $(filter $(OS),windows),.venv/Scripts/ruff.exe,.venv/bin/ruff)
+RUSTFMT      := ./.cargo-bin/bin/rustfmt$(if $(filter $(OS),windows),.exe)
 ZIG_FMT      := $(ZIG) fmt
 
 FORMATS := $(patsubst src/%/,format-%,$(dir $(wildcard src/*/)))
@@ -69,10 +72,10 @@ $(BIN_DIR)/haskell-%: src/haskell/%/main.hs | $(BUILD_DIR) $(BIN_DIR)
 $(BIN_DIR)/python-%: src/python/%/main.py | $(BIN_DIR)
 	cp $< $@ && chmod +x $@
 
-$(BIN_DIR)/rust-%: src/rust/%/main.rs | $(BIN_DIR)
+$(BIN_DIR)/rust-%: src/rust/%/main.rs | $(BIN_DIR) $(RUSTC)
 	$(RUSTC) $(RUSTFLAGS) -o $@ $<
 
-$(BIN_DIR)/zig-%: src/zig/%/main.zig | $(BIN_DIR) .zig-bin/zig$(if $(filter $(OS),windows),.exe)
+$(BIN_DIR)/zig-%: src/zig/%/main.zig | $(BIN_DIR) $(ZIG)
 	$(ZIG) build-exe $(ZIGFLAGS) -femit-bin=$@ $<
 
 # FORMAT TARGETS ===============================================================================================================================================
@@ -85,7 +88,7 @@ format-c:
 format-cpp:
 	$(CLANG_FORMAT) -i src/cpp/*/*.cpp
 
-format-fortran:
+format-fortran: $(FPRETTIFY)
 	$(FPRETTIFY) src/fortran/*/*.f90
 
 format-go:
@@ -94,13 +97,13 @@ format-go:
 format-haskell:
 	$(ORMOLU) --mode inplace src/haskell/*/*.hs
 
-format-python:
+format-python: $(RUFF)
 	$(RUFF) format --no-cache src/python/*/*.py
 
-format-rust:
+format-rust: $(RUSTFMT)
 	$(RUSTFMT) src/rust/*/*.rs
 
-format-zig: .zig-bin/zig$(if $(filter $(OS),windows),.exe)
+format-zig: $(ZIG)
 	$(ZIG_FMT) src/zig/*/*.zig
 
 # TEST TARGETS =================================================================================================================================================
@@ -110,15 +113,30 @@ test: $(TESTS)
 $(TESTS): test-%: $(BIN_DIR)/%
 	@[ "$$($<)" = "$(word $(lastword $(subst -, ,$*)),$(RESULTS))" ] && printf "\033[0;32mPASS %s\033[0m\n" "$<" || { printf "\033[0;31mFAIL %s\033[0m\n" "$<"; exit 1; }
 
-# COMPILER DOWNLOAD TARGETS =====================================================================================================================
+# COMPILER DOWNLOAD TARGETS ====================================================================================================================================
+
+$(RUSTC) $(RUSTFMT):
+ifeq ($(OS),windows)
+	@curl.exe -sSf -o rustup-init.exe https://win.rustup.rs/x86_64 && ./rustup-init.exe -y --no-modify-path && rm rustup-init.exe
+else
+	@curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
+endif
 
 ifeq ($(OS),windows)
-.zig-bin/zig.exe: | .zig-bin
+$(ZIG): | .zig-bin
 	@curl.exe -L# -o zig.zip https://ziglang.org/download/$(ZIG_VERSION)/zig-$(ARCH)-$(OS)-$(ZIG_VERSION).zip ; tar -xf zig.zip -C .zig-bin --strip-components=1 ; rm zig.zip
 else
-.zig-bin/zig: | .zig-bin
+$(ZIG): | .zig-bin
 	@curl -L# https://ziglang.org/download/$(ZIG_VERSION)/zig-$(ARCH)-$(OS)-$(ZIG_VERSION).tar.xz | tar -Jx -C .zig-bin --strip-components=1
 endif
+
+# VIRTUAL ENVIRONMENT TARGETS ==================================================================================================================================
+
+$(RUFF) $(FPRETTIFY): | .venv
+	$(if $(filter $(OS),windows),.venv/Scripts/pip,.venv/bin/pip) install ruff fprettify
+
+.venv:
+	$(PYTHON) -m venv .venv
 
 # AUXILIARY TARGETS ============================================================================================================================================
 
@@ -126,4 +144,4 @@ $(BUILD_DIR) $(BIN_DIR) .zig-bin:
 	@mkdir -p $@
 
 clean:
-	@rm -rf $(BUILD_DIR) $(BIN_DIR) .zig-bin
+	@rm -rf $(BUILD_DIR) $(BIN_DIR) .zig-bin .rust-bin .cargo-bin .venv

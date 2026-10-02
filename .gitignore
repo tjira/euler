@@ -1,4 +1,7 @@
+.venv/
 .zig-bin/
+.rust-bin/
+.cargo-bin/
 
 build/
 bin/
