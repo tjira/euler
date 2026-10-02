@@ -5,8 +5,6 @@ SHELL := /bin/bash
 # ENVIRONMENT VARIABLES FOR THE COMPILERS ======================================================================================================================
 
 export GHCUP_INSTALL_BASE_PREFIX := $(CURDIR)
-export CABAL_DIR                 := $(CURDIR)/.cabal-bin
-export STACK_ROOT                := $(CURDIR)/.stack-bin
 export RUSTUP_HOME               := $(CURDIR)/.rust-bin
 export CARGO_HOME                := $(CURDIR)/.cargo-bin
 
@@ -28,9 +26,7 @@ RUST_VERSION := 1.99.0
 
 # ADDITIONAL ENVIRONMENT VARIABLES =============================================================================================================================
 
-export BOOTSTRAP_HASKELL_NONINTERACTIVE   := 1
-export BOOTSTRAP_HASKELL_INSTALL_NO_STACK := 1
-export BOOTSTRAP_HASKELL_GHC_VERSION      := $(GHC_VERSION)
+export BOOTSTRAP_HASKELL_NONINTERACTIVE := 1
 
 # COMPILER COMMANDS AND FLAGS ==================================================================================================================================
 
