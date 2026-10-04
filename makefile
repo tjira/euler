@@ -1,6 +1,6 @@
-.PHONY: all clean test format
+SHELL := $(if $(filter $(OS),Windows_NT),powershell.exe,sh)
 
-SHELL := /bin/bash
+.SHELLFLAGS := $(if $(filter $(OS),Windows_NT),-NoProfile -Command,-c)
 
 # ENVIRONMENT VARIABLES FOR THE COMPILERS ======================================================================================================================
 
@@ -17,6 +17,8 @@ BIN_DIR   := bin
 
 ARCH := $(if $(filter $(OS),Windows_NT),x86_64,$(shell uname -m | tr '[:upper:]' '[:lower:]' | sed 's/arm64/aarch64/'))
 OS   := $(if $(filter $(OS),Windows_NT),windows,$(shell uname -s | tr '[:upper:]' '[:lower:]' | sed 's/darwin/macos/'))
+
+EXE  := $(if $(filter $(OS),windows),.exe)
 
 # COMPILER VERSIONS ============================================================================================================================================
 
@@ -42,10 +44,10 @@ GO          := go
 GOFLAGS     :=
 PYTHON      := python3
 PYTHONFLAGS :=
-RUSTC       := ./.cargo-bin/bin/rustc$(if $(filter $(OS),windows),.exe)
-RUSTFLAGS   := -C opt-level=3
-ZIG         := ./.zig-bin/zig$(if $(filter $(OS),windows),.exe)
-ZIGFLAGS    := -O ReleaseFast
+RUSTC       := .cargo-bin/bin/rustc$(EXE)
+RUSTFLAGS   := -C debuginfo=0 -C opt-level=3 $(if $(filter $(OS),windows),-C link-arg=/DEBUG:NONE)
+ZIG         := .zig-bin/zig$(EXE)
+ZIGFLAGS    := -O ReleaseFast -fstrip
 
 # FORMATTER COMMANDS ===========================================================================================================================================
 
@@ -54,7 +56,7 @@ FPRETTIFY    := $(if $(filter $(OS),windows),.venv/Scripts/fprettify.exe,.venv/b
 GOFMT        := gofmt
 ORMOLU       := ormolu
 RUFF         := $(if $(filter $(OS),windows),.venv/Scripts/ruff.exe,.venv/bin/ruff)
-RUSTFMT      := ./.cargo-bin/bin/rustfmt$(if $(filter $(OS),windows),.exe)
+RUSTFMT      := .cargo-bin/bin/rustfmt$(EXE)
 ZIG_FMT      := $(ZIG) fmt
 
 FORMATS := $(patsubst src/%/,format-%,$(dir $(wildcard src/*/)))
@@ -95,11 +97,11 @@ $(BIN_DIR)/haskell-%: src/haskell/%/main.hs | $(BIN_DIR) $(BUILD_DIR) $(GHC)
 $(BIN_DIR)/python-%: src/python/%/main.py | $(BIN_DIR)
 	cp $< $@ && chmod +x $@
 
-$(BIN_DIR)/rust-%: src/rust/%/main.rs | $(BIN_DIR) $(RUSTC)
+$(BIN_DIR)/rust-%$(EXE): src/rust/%/main.rs | $(BIN_DIR) $(RUSTC)
 	$(RUSTC) $(RUSTFLAGS) -o $@ $<
 
-$(BIN_DIR)/zig-%: src/zig/%/main.zig | $(BIN_DIR) $(ZIG)
-	$(ZIG) build-exe $(ZIGFLAGS) -femit-bin=$@ $<
+$(BIN_DIR)/zig-%$(EXE): src/zig/%/main.zig | $(BIN_DIR) $(ZIG)
+	$(ZIG) build-exe $(ZIGFLAGS) -femit-bin="$@" $<
 
 # FORMAT TARGETS ===============================================================================================================================================
 
@@ -148,7 +150,7 @@ endif
 
 ifeq ($(OS),windows)
 $(RUSTC) $(RUSTFMT):
-	@curl.exe -L# -o rustup-init.exe https://win.rustup.rs/$(ARCH) ; ./rustup-init.exe -y --default-toolchain $(RUST_VERSION) --no-modify-path ; rm rustup-init.exe
+	@curl.exe -L# -o rustup-init.exe https://win.rustup.rs ; ./rustup-init.exe -y --default-toolchain $(RUST_VERSION) --no-modify-path ; rm rustup-init.exe
 else
 $(RUSTC) $(RUSTFMT):
 	@curl -L# https://sh.rustup.rs | sh -s -- -y --default-toolchain $(RUST_VERSION) --no-modify-path
@@ -159,7 +161,7 @@ $(ZIG): | .zig-bin
 	@curl.exe -L# -o zig.zip https://ziglang.org/download/$(ZIG_VERSION)/zig-$(ARCH)-$(OS)-$(ZIG_VERSION).zip ; tar -xf zig.zip -C .zig-bin --strip-components=1 ; rm zig.zip
 else
 $(ZIG): | .zig-bin
-	@curl --proto '=https' --tlsv1.2 -sSf https://ziglang.org/download/$(ZIG_VERSION)/zig-$(ARCH)-$(OS)-$(ZIG_VERSION).tar.xz | tar -Jx -C .zig-bin --strip-components=1
+	@curl -L# https://ziglang.org/download/$(ZIG_VERSION)/zig-$(ARCH)-$(OS)-$(ZIG_VERSION).tar.xz | tar -Jx -C .zig-bin --strip-components=1
 endif
 
 # VIRTUAL ENVIRONMENT TARGETS ==================================================================================================================================
@@ -170,10 +172,12 @@ $(RUFF) $(FPRETTIFY): | .venv
 .venv:
 	$(PYTHON) -m venv .venv
 
-# AUXILIARY TARGETS ============================================================================================================================================
+# DIRECTORY CREATION TARGETS ===================================================================================================================================
 
 $(BUILD_DIR) $(BIN_DIR) .zig-bin:
-	@mkdir -p $@
+	@$(if $(filter windows,$(OS)),mkdir $@ -Force | Out-Null,mkdir -p $@)
+
+# ADDITIONAL TARGETS ===========================================================================================================================================
 
 clean:
-	@rm -rf $(BUILD_DIR) $(BIN_DIR) .zig-bin .rust-bin .cargo-bin .ghcup ghcup .cabal-bin .stack-bin .venv
+	@git clean -dffx
