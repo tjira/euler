@@ -145,7 +145,7 @@ $(TESTS): test-%: $(BIN_DIR)/%$(EXE)
 $(GHC): | $(GHCUP)
 	@$(GHCUP) install ghc $(GHC_VERSION) --set
 
-$(CLANG_FORMAT) $(FPRETTIFY) $(GHCUP) $(GO) $(GOFMT) $(ORMOLU) $(PYTHON) $(RUFF) $(RUSTC) $(RUSTFMT) $(ZIG): mise.toml
+$(CLANG_FORMAT) $(FPRETTIFY) $(GHCUP) $(GO) $(GOFMT) $(ORMOLU) $(PYTHON) $(RUFF) $(RUSTC) $(RUSTFMT) $(ZIG):
 	@mise install
 
 # DIRECTORY CREATION TARGETS ===================================================================================================================================
