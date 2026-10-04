@@ -70,7 +70,7 @@ TESTS := $(subst /,-,$(patsubst src/%/,test-%,$(dir $(wildcard src/*/*/main.*)))
 
 .PHONY: $(FORMATS) $(TESTS)
 
-all: $(TESTS:test-%=$(BIN_DIR)/%)
+all: $(TESTS:test-%=$(BIN_DIR)/%$(EXE))
 
 # BUILD TARGETS ================================================================================================================================================
 
@@ -90,7 +90,7 @@ $(BIN_DIR)/haskell-%$(EXE): src/haskell/%/main.hs | $(BIN_DIR) $(BUILD_DIR) $(GH
 	$(GHC) $(GHCFLAGS) -outputdir $(BUILD_DIR)/.ghc-$* -o $@ $<
 
 $(BIN_DIR)/python-%$(EXE): src/python/%/main.py | $(BIN_DIR)
-	cp $< $@ && chmod +x $@
+	cp $< $@ $(if $(filter $(OS),windows),,&& chmod +x $@)
 
 $(BIN_DIR)/rust-%$(EXE): src/rust/%/main.rs | $(BIN_DIR) $(RUSTC)
 	$(RUSTC) $(RUSTFLAGS) -o $@ $<
@@ -130,7 +130,7 @@ format-zig: $(ZIG)
 
 test: $(TESTS)
 
-$(TESTS): test-%: $(BIN_DIR)/%
+$(TESTS): test-%: $(BIN_DIR)/%$(EXE)
 	@[ "$$($<)" = "$(word $(lastword $(subst -, ,$*)),$(RESULTS))" ] && printf "\033[0;32mPASS %s\033[0m\n" "$<" || { printf "\033[0;31mFAIL %s\033[0m\n" "$<"; exit 1; }
 
 # COMPILER DOWNLOAD TARGETS ====================================================================================================================================
