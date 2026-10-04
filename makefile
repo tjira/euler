@@ -4,9 +4,7 @@ SHELL := $(if $(filter $(OS),Windows_NT),powershell.exe,sh)
 
 # ENVIRONMENT VARIABLES FOR THE COMPILERS ======================================================================================================================
 
-export GHCUP_INSTALL_BASE_PREFIX := $(CURDIR)
-export MISE_DATA_DIR             := $(CURDIR)/.mise
-export MISE_CACHE_DIR            := $(CURDIR)/.mise/cache
+export MISE_DATA_DIR := $(CURDIR)/.mise
 
 # OUTPUT DIRECTORIES ===========================================================================================================================================
 
@@ -18,17 +16,15 @@ BIN_DIR   := bin
 ARCH := $(if $(filter $(OS),Windows_NT),x86_64,$(shell uname -m | tr '[:upper:]' '[:lower:]' | sed 's/arm64/aarch64/'))
 OS   := $(if $(filter $(OS),Windows_NT),windows,$(shell uname -s | tr '[:upper:]' '[:lower:]' | sed 's/darwin/macos/'))
 
-EXE  := $(if $(filter $(OS),windows),.exe)
+EXE := $(if $(filter $(OS),windows),.exe)
 
 # COMPILER VERSIONS ============================================================================================================================================
 
 GHC_VERSION  := 9.14.1
 
-# ADDITIONAL ENVIRONMENT VARIABLES =============================================================================================================================
-
-export BOOTSTRAP_HASKELL_NONINTERACTIVE := 1
-
 # COMPILER COMMANDS AND FLAGS ==================================================================================================================================
+
+GHCUP := .mise/shims/ghcup$(EXE)
 
 CC          := gcc
 CFLAGS      := -O3
@@ -49,11 +45,11 @@ ZIGFLAGS    := -O ReleaseFast -fstrip
 
 # FORMATTER COMMANDS ===========================================================================================================================================
 
-CLANG_FORMAT := clang-format
-FPRETTIFY    := $(if $(filter $(OS),windows),.venv/Scripts/fprettify.exe,.venv/bin/fprettify)
+CLANG_FORMAT := .mise/shims/clang-format$(EXE)
+FPRETTIFY    := .mise/shims/fprettify$(EXE)
 GOFMT        := .mise/shims/gofmt$(EXE)
-ORMOLU       := ormolu
-RUFF         := $(if $(filter $(OS),windows),.venv/Scripts/ruff.exe,.venv/bin/ruff)
+ORMOLU       := .mise/shims/ormolu$(EXE)
+RUFF         := .mise/shims/ruff$(EXE)
 RUSTFMT      := .mise/shims/rustfmt$(EXE)
 ZIG_FMT      := $(ZIG) fmt
 
@@ -105,29 +101,29 @@ $(BIN_DIR)/zig-%$(EXE): src/zig/%/main.zig | $(BIN_DIR) $(ZIG)
 
 format: $(FORMATS)
 
-format-c:
-	$(CLANG_FORMAT) -i src/c/*/*.c
+format-c: $(CLANG_FORMAT)
+	$(CLANG_FORMAT) -i $(wildcard src/c/*/*.c)
 
-format-cpp:
-	$(CLANG_FORMAT) -i src/cpp/*/*.cpp
+format-cpp: $(CLANG_FORMAT)
+	$(CLANG_FORMAT) -i $(wildcard src/cpp/*/*.cpp)
 
 format-fortran: $(FPRETTIFY)
-	$(FPRETTIFY) src/fortran/*/*.f90
+	$(FPRETTIFY) $(wildcard src/fortran/*/*.f90)
 
 format-go: $(GOFMT)
-	$(GOFMT) -w src/go/*/*.go
+	$(GOFMT) -w $(wildcard src/go/*/*.go)
 
-format-haskell:
-	$(ORMOLU) --mode inplace src/haskell/*/*.hs
+format-haskell: $(ORMOLU)
+	$(ORMOLU) --mode inplace $(wildcard src/haskell/*/*.hs)
 
 format-python: $(RUFF)
-	$(RUFF) format --no-cache src/python/*/*.py
+	$(RUFF) format --no-cache $(wildcard src/python/*/*.py)
 
 format-rust: $(RUSTFMT)
-	$(RUSTFMT) src/rust/*/*.rs
+	$(RUSTFMT) $(wildcard src/rust/*/*.rs)
 
 format-zig: $(ZIG)
-	$(ZIG_FMT) src/zig/*/*.zig
+	$(ZIG_FMT) $(wildcard src/zig/*/*.zig)
 
 # TEST TARGETS =================================================================================================================================================
 
@@ -138,24 +134,11 @@ $(TESTS): test-%: $(BIN_DIR)/%
 
 # COMPILER DOWNLOAD TARGETS ====================================================================================================================================
 
-ifeq ($(OS),windows)
-$(GHC):
-	@curl.exe -L# https://get-ghcup.haskell.org | BOOTSTRAP_HASKELL_GHC_VERSION=$(GHC_VERSION) sh
-else
-$(GHC):
-	@curl -L# https://get-ghcup.haskell.org | BOOTSTRAP_HASKELL_GHC_VERSION=$(GHC_VERSION) sh
-endif
+$(GHC): | $(GHCUP)
+	@$(GHCUP) install ghc $(GHC_VERSION) --set
 
-$(GO) $(GOFMT) $(PYTHON) $(RUSTC) $(RUSTFMT) $(ZIG): mise.toml
+$(CLANG_FORMAT) $(FPRETTIFY) $(GHCUP) $(GO) $(GOFMT) $(ORMOLU) $(PYTHON) $(RUFF) $(RUSTC) $(RUSTFMT) $(ZIG): mise.toml
 	@mise install
-
-# VIRTUAL ENVIRONMENT TARGETS ==================================================================================================================================
-
-$(RUFF) $(FPRETTIFY): | .venv
-	$(if $(filter $(OS),windows),.venv/Scripts/pip,.venv/bin/pip) install ruff fprettify
-
-.venv: | $(PYTHON)
-	$(PYTHON) -m venv .venv
 
 # DIRECTORY CREATION TARGETS ===================================================================================================================================
 

@@ -15,6 +15,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - uses: jdx/mise-action@v5
+        with:
+          install: false
+
       - name: Build the Programs
         run: make
 

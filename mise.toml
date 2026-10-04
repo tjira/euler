@@ -1,5 +1,21 @@
+[env]
+# Additional Compiler Versions
+GHC_VERSION = "9.14.1"
+
 [tools]
-go = "1.24"
-python = "3.13"
-rust = "1.99.0"
-zig = "0.16.0"
+# Compilers
+go     = "1.24.13"
+python = "3.13.16"
+rust   = "1.99.0"
+zig    = "0.16.0"
+
+# Compiler Bootstrappers
+ghcup = "0.2.6.2"
+
+# Formatters
+clang-format = "23.1.2"
+ruff         = "0.16.10"
+ormolu       = "0.9.0.0"
+
+# Formatters from Conda
+"conda:fprettify" = "0.3.7"
