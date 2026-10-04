@@ -2,9 +2,10 @@ SHELL := $(if $(filter $(OS),Windows_NT),powershell.exe,sh)
 
 .SHELLFLAGS := $(if $(filter $(OS),Windows_NT),-NoProfile -Command,-c)
 
-# ENVIRONMENT VARIABLES FOR THE COMPILERS ======================================================================================================================
+# ENVIRONMENT VARIABLES ========================================================================================================================================
 
-export MISE_DATA_DIR := $(CURDIR)/.mise
+export GHCUP_INSTALL_BASE_PREFIX := $(CURDIR)
+export MISE_DATA_DIR             := $(CURDIR)/.mise
 
 # OUTPUT DIRECTORIES ===========================================================================================================================================
 
