@@ -68,7 +68,7 @@ RESULTS = \
 
 TESTS := $(subst /,-,$(patsubst src/%/,test-%,$(dir $(wildcard src/*/*/main.*))))
 
-.PHONY: $(FORMATS) $(TESTS)
+.PHONY: $(FORMATS) $(subst /,-,$(patsubst src/%/,run-%,$(dir $(wildcard src/*/*/main.*)))) $(TESTS)
 
 all: $(TESTS:test-%=$(BIN_DIR)/%$(EXE))
 
@@ -125,6 +125,13 @@ format-rust: $(RUSTFMT)
 
 format-zig: $(ZIG)
 	$(ZIG_FMT) $(wildcard src/zig/*/*.zig)
+
+# RUN TARGETS ==================================================================================================================================================
+
+run: $(subst /,-,$(patsubst src/%/,run-%,$(dir $(wildcard src/*/*/main.*))))
+
+$(subst /,-,$(patsubst src/%/,run-%,$(dir $(wildcard src/*/*/main.*)))): run-%: $(BIN_DIR)/%$(EXE)
+	@$<
 
 # TEST TARGETS =================================================================================================================================================
 
