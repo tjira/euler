@@ -5,8 +5,8 @@ SHELL := $(if $(filter $(OS),Windows_NT),powershell.exe,sh)
 # ENVIRONMENT VARIABLES FOR THE COMPILERS ======================================================================================================================
 
 export GHCUP_INSTALL_BASE_PREFIX := $(CURDIR)
-export RUSTUP_HOME               := $(CURDIR)/.rust-bin
-export CARGO_HOME                := $(CURDIR)/.cargo-bin
+export MISE_DATA_DIR             := $(CURDIR)/.mise
+export MISE_CACHE_DIR            := $(CURDIR)/.mise/cache
 
 # OUTPUT DIRECTORIES ===========================================================================================================================================
 
@@ -23,8 +23,6 @@ EXE  := $(if $(filter $(OS),windows),.exe)
 # COMPILER VERSIONS ============================================================================================================================================
 
 GHC_VERSION  := 9.14.1
-ZIG_VERSION  := 0.16.0
-RUST_VERSION := 1.99.0
 
 # ADDITIONAL ENVIRONMENT VARIABLES =============================================================================================================================
 
@@ -40,23 +38,23 @@ FC          := gfortran
 FCFLAGS     := -O3
 GHC         := $(if $(filter $(OS),windows),./ghcup/bin/ghc.exe,./.ghcup/bin/ghc)
 GHCFLAGS    := -O3
-GO          := go
+GO          := .mise/shims/go$(EXE)
 GOFLAGS     :=
-PYTHON      := python3
+PYTHON      := .mise/shims/python$(EXE)
 PYTHONFLAGS :=
-RUSTC       := .cargo-bin/bin/rustc$(EXE)
+RUSTC       := .mise/shims/rustc$(EXE)
 RUSTFLAGS   := -C debuginfo=0 -C opt-level=3 $(if $(filter $(OS),windows),-C link-arg=/DEBUG:NONE)
-ZIG         := .zig-bin/zig$(EXE)
+ZIG         := .mise/shims/zig$(EXE)
 ZIGFLAGS    := -O ReleaseFast -fstrip
 
 # FORMATTER COMMANDS ===========================================================================================================================================
 
 CLANG_FORMAT := clang-format
 FPRETTIFY    := $(if $(filter $(OS),windows),.venv/Scripts/fprettify.exe,.venv/bin/fprettify)
-GOFMT        := gofmt
+GOFMT        := .mise/shims/gofmt$(EXE)
 ORMOLU       := ormolu
 RUFF         := $(if $(filter $(OS),windows),.venv/Scripts/ruff.exe,.venv/bin/ruff)
-RUSTFMT      := .cargo-bin/bin/rustfmt$(EXE)
+RUSTFMT      := .mise/shims/rustfmt$(EXE)
 ZIG_FMT      := $(ZIG) fmt
 
 FORMATS := $(patsubst src/%/,format-%,$(dir $(wildcard src/*/)))
@@ -79,22 +77,22 @@ all: $(TESTS:test-%=$(BIN_DIR)/%)
 
 # BUILD TARGETS ================================================================================================================================================
 
-$(BIN_DIR)/c-%: src/c/%/main.c | $(BIN_DIR)
+$(BIN_DIR)/c-%$(EXE): src/c/%/main.c | $(BIN_DIR)
 	$(CC) $(CFLAGS) -o $@ $<
 
-$(BIN_DIR)/cpp-%: src/cpp/%/main.cpp | $(BIN_DIR)
+$(BIN_DIR)/cpp-%$(EXE): src/cpp/%/main.cpp | $(BIN_DIR)
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
-$(BIN_DIR)/fortran-%: src/fortran/%/main.f90 | $(BIN_DIR)
+$(BIN_DIR)/fortran-%$(EXE): src/fortran/%/main.f90 | $(BIN_DIR)
 	$(FC) $(FCFLAGS) -o $@ $<
 
-$(BIN_DIR)/go-%: src/go/%/main.go | $(BIN_DIR)
+$(BIN_DIR)/go-%$(EXE): src/go/%/main.go | $(BIN_DIR) $(GO)
 	$(GO) build $(GOFLAGS) -o $@ $<
 
-$(BIN_DIR)/haskell-%: src/haskell/%/main.hs | $(BIN_DIR) $(BUILD_DIR) $(GHC)
+$(BIN_DIR)/haskell-%$(EXE): src/haskell/%/main.hs | $(BIN_DIR) $(BUILD_DIR) $(GHC)
 	$(GHC) $(GHCFLAGS) -outputdir $(BUILD_DIR)/.ghc-$* -o $@ $<
 
-$(BIN_DIR)/python-%: src/python/%/main.py | $(BIN_DIR)
+$(BIN_DIR)/python-%$(EXE): src/python/%/main.py | $(BIN_DIR)
 	cp $< $@ && chmod +x $@
 
 $(BIN_DIR)/rust-%$(EXE): src/rust/%/main.rs | $(BIN_DIR) $(RUSTC)
@@ -116,7 +114,7 @@ format-cpp:
 format-fortran: $(FPRETTIFY)
 	$(FPRETTIFY) src/fortran/*/*.f90
 
-format-go:
+format-go: $(GOFMT)
 	$(GOFMT) -w src/go/*/*.go
 
 format-haskell:
@@ -148,33 +146,20 @@ $(GHC):
 	@curl -L# https://get-ghcup.haskell.org | BOOTSTRAP_HASKELL_GHC_VERSION=$(GHC_VERSION) sh
 endif
 
-ifeq ($(OS),windows)
-$(RUSTC) $(RUSTFMT):
-	@curl.exe -L# -o rustup-init.exe https://win.rustup.rs ; ./rustup-init.exe -y --default-toolchain $(RUST_VERSION) --no-modify-path ; rm rustup-init.exe
-else
-$(RUSTC) $(RUSTFMT):
-	@curl -L# https://sh.rustup.rs | sh -s -- -y --default-toolchain $(RUST_VERSION) --no-modify-path
-endif
-
-ifeq ($(OS),windows)
-$(ZIG): | .zig-bin
-	@curl.exe -L# -o zig.zip https://ziglang.org/download/$(ZIG_VERSION)/zig-$(ARCH)-$(OS)-$(ZIG_VERSION).zip ; tar -xf zig.zip -C .zig-bin --strip-components=1 ; rm zig.zip
-else
-$(ZIG): | .zig-bin
-	@curl -L# https://ziglang.org/download/$(ZIG_VERSION)/zig-$(ARCH)-$(OS)-$(ZIG_VERSION).tar.xz | tar -Jx -C .zig-bin --strip-components=1
-endif
+$(GO) $(GOFMT) $(PYTHON) $(RUSTC) $(RUSTFMT) $(ZIG): mise.toml
+	@mise install
 
 # VIRTUAL ENVIRONMENT TARGETS ==================================================================================================================================
 
 $(RUFF) $(FPRETTIFY): | .venv
 	$(if $(filter $(OS),windows),.venv/Scripts/pip,.venv/bin/pip) install ruff fprettify
 
-.venv:
+.venv: | $(PYTHON)
 	$(PYTHON) -m venv .venv
 
 # DIRECTORY CREATION TARGETS ===================================================================================================================================
 
-$(BUILD_DIR) $(BIN_DIR) .zig-bin:
+$(BUILD_DIR) $(BIN_DIR):
 	@$(if $(filter windows,$(OS)),mkdir $@ -Force | Out-Null,mkdir -p $@)
 
 # ADDITIONAL TARGETS ===========================================================================================================================================

@@ -1,7 +1,5 @@
+.mise/
 .venv/
-.zig-bin/
-.rust-bin/
-.cargo-bin/
 .ghcup/
 ghcup/
 .cabal-bin/
