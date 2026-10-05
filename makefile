@@ -7,13 +7,15 @@ SHELL := $(if $(filter $(OS),Windows_NT),powershell.exe,sh)
 # ENVIRONMENT VARIABLES ========================================================================================================================================
 
 export GHCUP_INSTALL_BASE_PREFIX := $(CURDIR)
-export MISE_DATA_DIR             := $(CURDIR)/.mise
-export MISE_CACHE_DIR            := $(CURDIR)/.mise/cache
-export MISE_STATE_DIR            := $(CURDIR)/.mise/state
+
+export MISE_CACHE_DIR := $(CURDIR)/.mise/cache
+export MISE_STATE_DIR := $(CURDIR)/.mise/state
 
 export NODE_DISABLE_COLORS := 1
 
 MISE_EXEC ?= $(if $(__MISE_DIFF),,mise exec --)
+
+export MISE_DATA_DIR := $(CURDIR)/.mise
 
 # OUTPUT DIRECTORIES ===========================================================================================================================================
 

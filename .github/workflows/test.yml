@@ -12,6 +12,12 @@ jobs:
   test_linux_x86-64:
     runs-on: ubuntu-latest
 
+    env:
+      MISE_DATA_DIR: ${{github.workspace}}/.mise
+
+      MISE_CACHE_DIR: ${{github.workspace}}/.mise/cache
+      MISE_STATE_DIR: ${{github.workspace}}/.mise/state
+
     steps:
       - uses: actions/checkout@v7
 
