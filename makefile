@@ -45,7 +45,7 @@ CXXFLAGS    := -O3 -s
 FC          := gfortran
 FCFLAGS     := -O3 -s
 GHC         := $(if $(filter $(OS),windows),ghcup/bin/ghc.exe,.ghcup/bin/ghc)
-GHCFLAGS    := -O3 -optl-s
+GHCFLAGS    := -O3 -optl-s -v0
 GO          := $(MISE_EXEC) go
 GOFLAGS     := -ldflags="-s -w"
 JULIA       := $(MISE_EXEC) julia
@@ -61,7 +61,7 @@ PYTHONFLAGS := -O
 RUSTC       := $(MISE_EXEC) rustc
 RUSTFLAGS   := -C opt-level=3 -C strip=symbols $(if $(filter $(OS),windows),-C link-arg=/DEBUG:NONE)
 ZIG         := $(MISE_EXEC) zig
-ZIGFLAGS    := -O ReleaseFast -fstrip
+ZIGFLAGS    := -O ReleaseFast -fstrip --color off
 
 # FORMATTER COMMANDS ===========================================================================================================================================
 
