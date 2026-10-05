@@ -3,7 +3,7 @@ name: Test
 on:
   push:
     branches:
-      - "master"
+      - 'master'
 
 permissions:
   contents: write
@@ -33,7 +33,7 @@ jobs:
           TEMP: ${{runner.temp}}
 
       - name: Setup the Environment
-        run: make setup .ghcup/bin/ghc
+        run: make setup ${{runner.os == 'Windows' && 'ghcup/bin/ghc' || '.ghcup/bin/ghc'}}
 
       - name: Build the Programs
         run: make
