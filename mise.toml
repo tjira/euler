@@ -13,7 +13,7 @@ rust   = "1.99.0"
 zig    = "0.16.0"
 
 # Compilers with Date-Based Versioning
-odin = "dev-2026-09"
+odin = { version = "dev-2026-09", bin_path = "." }
 
 # Compiler Bootstrappers
 ghcup = "0.2.6.2"

@@ -55,7 +55,7 @@ NIMFLAGS    := --define:release --opt:speed --hints:off
 NODE        := $(MISE_EXEC) node
 NODEFLAGS   :=
 ODIN        := $(MISE_EXEC) odin
-ODINFLAGS   := -o:speed
+ODINFLAGS   := --o:speed
 PYTHON      := $(MISE_EXEC) python
 PYTHONFLAGS := -O
 RUSTC       := $(MISE_EXEC) rustc
@@ -117,7 +117,7 @@ $(BIN_DIR)/nim-%$(COMP_EXE): src/nim/%/main.nim | $(BIN_DIR)
 	$(NIM) c $(NIMFLAGS) --out:$@ $<
 
 $(BIN_DIR)/odin-%$(COMP_EXE): src/odin/%/main.odin | $(BIN_DIR)
-	$(ODIN) build $< -file -out:$@ $(ODINFLAGS)
+	$(ODIN) build $< -file --out:$@ $(ODINFLAGS)
 
 $(BIN_DIR)/rust-%$(COMP_EXE): src/rust/%/main.rs | $(BIN_DIR)
 	$(RUSTC) $(RUSTFLAGS) -o $@ $<
