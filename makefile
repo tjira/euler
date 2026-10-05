@@ -2,9 +2,14 @@ SHELL := $(if $(filter $(OS),Windows_NT),powershell.exe,sh)
 
 .SHELLFLAGS := $(if $(filter $(OS),Windows_NT),-NoProfile -Command,-c)
 
+.SECONDEXPANSION:
+
 # ENVIRONMENT VARIABLES ========================================================================================================================================
 
 export GHCUP_INSTALL_BASE_PREFIX := $(CURDIR)
+export MISE_DATA_DIR             := $(CURDIR)/.mise
+export MISE_CACHE_DIR            := $(CURDIR)/.mise/cache
+export MISE_STATE_DIR            := $(CURDIR)/.mise/state
 
 MISE_EXEC ?= $(if $(__MISE_DIFF),,mise exec --)
 
@@ -18,7 +23,8 @@ BIN_DIR   := bin
 ARCH := $(if $(filter $(OS),Windows_NT),x86_64,$(shell uname -m | tr '[:upper:]' '[:lower:]' | sed 's/arm64/aarch64/'))
 OS   := $(if $(filter $(OS),Windows_NT),windows,$(shell uname -s | tr '[:upper:]' '[:lower:]' | sed 's/darwin/macos/'))
 
-EXE := $(if $(filter $(OS),windows),.exe)
+COMP_EXE := $(if $(filter $(OS),windows),.exe)
+INTP_EXE := $(if $(filter $(OS),windows),.cmd)
 
 # COMPILER VERSIONS ============================================================================================================================================
 
@@ -39,7 +45,7 @@ GHCFLAGS    := -O3 -optl-s
 GO          := $(MISE_EXEC) go
 GOFLAGS     := -ldflags="-s -w"
 PYTHON      := $(MISE_EXEC) python
-PYTHONFLAGS :=
+PYTHONFLAGS := -O
 RUSTC       := $(MISE_EXEC) rustc
 RUSTFLAGS   := -C opt-level=3 -C strip=symbols $(if $(filter $(OS),windows),-C link-arg=/DEBUG:NONE)
 ZIG         := $(MISE_EXEC) zig
@@ -67,37 +73,45 @@ RESULTS = \
 
 # GLOBAL TARGETS ===============================================================================================================================================
 
-TESTS := $(subst /,-,$(patsubst src/%/,test-%,$(dir $(wildcard src/*/*/main.*))))
+TEST_TASKS := $(subst /,-,$(patsubst src/%/,test-%,$(dir $(wildcard src/*/*/main.*))))
+RUN_TARGETS := $(subst /,-,$(patsubst src/%/,run-%,$(dir $(wildcard src/*/*/main.*))))
 
-.PHONY: $(FORMATS) $(subst /,-,$(patsubst src/%/,run-%,$(dir $(wildcard src/*/*/main.*)))) $(TESTS)
+BIN_TARGET = $(if $(filter python-%,$1),$(BIN_DIR)/$1$(INTP_EXE),$(BIN_DIR)/$1$(COMP_EXE))
 
-all: $(TESTS:test-%=$(BIN_DIR)/%$(EXE))
+.PHONY: $(FORMATS) $(RUN_TARGETS) $(TEST_TASKS)
+
+all: $(foreach t,$(TEST_TASKS:test-%=%),$(call BIN_TARGET,$(t)))
 
 # BUILD TARGETS ================================================================================================================================================
 
-$(BIN_DIR)/c-%$(EXE): src/c/%/main.c | $(BIN_DIR)
+$(BIN_DIR)/c-%$(COMP_EXE): src/c/%/main.c | $(BIN_DIR)
 	$(CC) $(CFLAGS) -o $@ $<
 
-$(BIN_DIR)/cpp-%$(EXE): src/cpp/%/main.cpp | $(BIN_DIR)
+$(BIN_DIR)/cpp-%$(COMP_EXE): src/cpp/%/main.cpp | $(BIN_DIR)
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
-$(BIN_DIR)/fortran-%$(EXE): src/fortran/%/main.f90 | $(BIN_DIR)
+$(BIN_DIR)/fortran-%$(COMP_EXE): src/fortran/%/main.f90 | $(BIN_DIR)
 	$(FC) $(FCFLAGS) -o $@ $<
 
-$(BIN_DIR)/go-%$(EXE): src/go/%/main.go | $(BIN_DIR)
+$(BIN_DIR)/go-%$(COMP_EXE): src/go/%/main.go | $(BIN_DIR)
 	$(GO) build $(GOFLAGS) -o $@ $<
 
-$(BIN_DIR)/haskell-%$(EXE): src/haskell/%/main.hs | $(BIN_DIR) $(BUILD_DIR) $(GHC)
+$(BIN_DIR)/haskell-%$(COMP_EXE): src/haskell/%/main.hs | $(BIN_DIR) $(BUILD_DIR) $(GHC)
 	$(GHC) $(GHCFLAGS) -outputdir $(BUILD_DIR)/.ghc-$* -o $@ $<
 
-$(BIN_DIR)/python-%$(EXE): src/python/%/main.py | $(BIN_DIR)
-	cp $< $@ $(if $(filter $(OS),windows),,&& chmod +x $@)
-
-$(BIN_DIR)/rust-%$(EXE): src/rust/%/main.rs | $(BIN_DIR)
+$(BIN_DIR)/rust-%$(COMP_EXE): src/rust/%/main.rs | $(BIN_DIR)
 	$(RUSTC) $(RUSTFLAGS) -o $@ $<
 
-$(BIN_DIR)/zig-%$(EXE): src/zig/%/main.zig | $(BIN_DIR)
+$(BIN_DIR)/zig-%$(COMP_EXE): src/zig/%/main.zig | $(BIN_DIR)
 	$(ZIG) build-exe $(ZIGFLAGS) -femit-bin="$@" $<
+
+ifeq ($(OS),windows)
+$(BIN_DIR)/python-%$(INTP_EXE): src/python/%/main.py | $(BIN_DIR)
+	@Set-Content -Path $@ -Value '@"$(shell $(PYTHON) -c "import sys; print(sys.executable)")" $(PYTHONFLAGS) -x "%~f0" %* & exit /b', "", (Get-Content -Path $<)
+else
+$(BIN_DIR)/python-%$(INTP_EXE): src/python/%/main.py | $(BIN_DIR)
+	@printf '%s\n\n' "#!$(shell $(PYTHON) -c 'import sys; print(sys.executable)') $(PYTHONFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
+endif
 
 # FORMAT TARGETS ===============================================================================================================================================
 
@@ -129,16 +143,16 @@ format-zig:
 
 # RUN TARGETS ==================================================================================================================================================
 
-run: $(subst /,-,$(patsubst src/%/,run-%,$(dir $(wildcard src/*/*/main.*))))
+run: $(RUN_TARGETS)
 
-$(subst /,-,$(patsubst src/%/,run-%,$(dir $(wildcard src/*/*/main.*)))): run-%: $(BIN_DIR)/%$(EXE)
+$(RUN_TARGETS): run-%: $$(call BIN_TARGET,%)
 	@$<
 
 # TEST TARGETS =================================================================================================================================================
 
-test: $(TESTS)
+test: $(TEST_TASKS)
 
-$(TESTS): test-%: $(BIN_DIR)/%$(EXE)
+$(TEST_TASKS): test-%: $$(call BIN_TARGET,%)
 	@[ "$$($<)" = "$(word $(lastword $(subst -, ,$*)),$(RESULTS))" ] && printf "\033[0;32mPASS %s\033[0m\n" "$<" || { printf "\033[0;31mFAIL %s\033[0m\n" "$<"; exit 1; }
 
 # COMPILER DOWNLOAD TARGETS ====================================================================================================================================
