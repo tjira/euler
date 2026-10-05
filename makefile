@@ -11,6 +11,8 @@ export MISE_DATA_DIR             := $(CURDIR)/.mise
 export MISE_CACHE_DIR            := $(CURDIR)/.mise/cache
 export MISE_STATE_DIR            := $(CURDIR)/.mise/state
 
+export NODE_DISABLE_COLORS := 1
+
 MISE_EXEC ?= $(if $(__MISE_DIFF),,mise exec --)
 
 # OUTPUT DIRECTORIES ===========================================================================================================================================
@@ -44,6 +46,8 @@ GHC         := $(if $(filter $(OS),windows),ghcup/bin/ghc.exe,.ghcup/bin/ghc)
 GHCFLAGS    := -O3 -optl-s
 GO          := $(MISE_EXEC) go
 GOFLAGS     := -ldflags="-s -w"
+NODE        := $(MISE_EXEC) node
+NODEFLAGS   :=
 PYTHON      := $(MISE_EXEC) python
 PYTHONFLAGS := -O
 RUSTC       := $(MISE_EXEC) rustc
@@ -76,7 +80,7 @@ RESULTS = \
 TEST_TASKS := $(subst /,-,$(patsubst src/%/,test-%,$(dir $(wildcard src/*/*/main.*))))
 RUN_TARGETS := $(subst /,-,$(patsubst src/%/,run-%,$(dir $(wildcard src/*/*/main.*))))
 
-BIN_TARGET = $(if $(filter python-%,$1),$(BIN_DIR)/$1$(INTP_EXE),$(BIN_DIR)/$1$(COMP_EXE))
+BIN_TARGET = $(if $(filter javascript-% python-%,$1),$(BIN_DIR)/$1$(INTP_EXE),$(BIN_DIR)/$1$(COMP_EXE))
 
 .PHONY: $(FORMATS) $(RUN_TARGETS) $(TEST_TASKS)
 
@@ -106,11 +110,21 @@ $(BIN_DIR)/zig-%$(COMP_EXE): src/zig/%/main.zig | $(BIN_DIR)
 	$(ZIG) build-exe $(ZIGFLAGS) -femit-bin="$@" $<
 
 ifeq ($(OS),windows)
+
+$(BIN_DIR)/javascript-%$(INTP_EXE): src/javascript/%/main.js | $(BIN_DIR)
+	@Set-Content -Path $@ -Value '// 2>nul & @"$(shell $(NODE) -e "console.log(process.execPath)")" $(NODEFLAGS) "%~f0" %* & exit /b', "", (Get-Content -Path $<)
+
 $(BIN_DIR)/python-%$(INTP_EXE): src/python/%/main.py | $(BIN_DIR)
 	@Set-Content -Path $@ -Value '@"$(shell $(PYTHON) -c "import sys; print(sys.executable)")" $(PYTHONFLAGS) -x "%~f0" %* & exit /b', "", (Get-Content -Path $<)
+
 else
+
+$(BIN_DIR)/javascript-%$(INTP_EXE): src/javascript/%/main.js | $(BIN_DIR)
+	@printf '%s\n\n' "#!$(shell $(NODE) -e 'console.log(process.execPath)') $(NODEFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
+
 $(BIN_DIR)/python-%$(INTP_EXE): src/python/%/main.py | $(BIN_DIR)
 	@printf '%s\n\n' "#!$(shell $(PYTHON) -c 'import sys; print(sys.executable)') $(PYTHONFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
+
 endif
 
 # FORMAT TARGETS ===============================================================================================================================================
@@ -131,6 +145,9 @@ format-go:
 
 format-haskell:
 	$(ORMOLU) --mode inplace $(wildcard src/haskell/*/*.hs)
+
+format-javascript:
+	$(CLANG_FORMAT) -i $(wildcard src/javascript/*/*.js)
 
 format-python:
 	$(RUFF) format --no-cache $(wildcard src/python/*/*.py)
