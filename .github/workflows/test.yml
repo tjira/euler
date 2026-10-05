@@ -25,12 +25,12 @@ jobs:
       MISE_CACHE_DIR: ${{github.workspace}}/.mise/cache
       MISE_STATE_DIR: ${{github.workspace}}/.mise/state
 
+      TEMP: ${{ runner.temp }}
+
     steps:
       - uses: actions/checkout@v7
 
       - uses: jdx/mise-action@v5
-        with:
-          cache: false
 
       - name: Setup the Environment
         run: make setup .ghcup/bin/ghc
