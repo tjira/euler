@@ -30,7 +30,7 @@ INTP_EXE := $(if $(filter $(OS),windows),.cmd)
 
 # COMPILER VERSIONS ============================================================================================================================================
 
-GHC_VERSION  := 9.14.1
+GHC_VERSION := $(shell mise config get env.GHC_VERSION)
 
 # COMPILER COMMANDS AND FLAGS ==================================================================================================================================
 
@@ -132,36 +132,36 @@ $(BIN_DIR)/zig-%$(COMP_EXE): src/zig/%/main.zig | $(BIN_DIR)
 ifeq ($(OS),windows)
 
 $(BIN_DIR)/javascript-%$(INTP_EXE): src/javascript/%/main.js | $(BIN_DIR)
-	@Set-Content -Path $@ -Value '// 2>nul & @"$(shell $(NODE) -e "console.log(process.execPath)")" $(NODEFLAGS) "%~f0" %* & exit /b', "", (Get-Content -Path $<)
+	@Set-Content -Path $@ -Value '@"$(shell $(MISE_EXEC) which node)" $(NODEFLAGS) "$<" %* & exit /b'
 
 $(BIN_DIR)/julia-%$(INTP_EXE): src/julia/%/main.jl | $(BIN_DIR)
-	@Set-Content -Path $@ -Value '@"$(shell $(JULIA) -e "println(joinpath(Sys.BINDIR, """julia.exe"""))")" $(JULIAFLAGS) "$<" %* & exit /b'
+	@Set-Content -Path $@ -Value '@"$(shell $(MISE_EXEC) which julia)" $(JULIAFLAGS) "$<" %* & exit /b'
 
 $(BIN_DIR)/lua-%$(INTP_EXE): src/lua/%/main.lua | $(BIN_DIR)
 	@Set-Content -Path $@ -Value '@"$(shell $(MISE_EXEC) which lua)" $(LUAFLAGS) "$<" %* & exit /b'
 
 $(BIN_DIR)/python-%$(INTP_EXE): src/python/%/main.py | $(BIN_DIR)
-	@Set-Content -Path $@ -Value '@"$(shell $(PYTHON) -c "import sys; print(sys.executable)")" $(PYTHONFLAGS) -x "%~f0" %* & exit /b', "", (Get-Content -Path $<)
+	@Set-Content -Path $@ -Value '@"$(shell $(MISE_EXEC) which python)" $(PYTHONFLAGS) "$<" %* & exit /b'
 
 $(BIN_DIR)/ruby-%$(INTP_EXE): src/ruby/%/main.rb | $(BIN_DIR)
-	@Set-Content -Path $@ -Value '@"$(shell $(RUBY) -e "puts RbConfig.ruby")" $(RUBYFLAGS) -x "%~f0" %* & exit /b', "", (Get-Content -Path $<)
+	@Set-Content -Path $@ -Value '@"$(shell $(MISE_EXEC) which ruby)" $(RUBYFLAGS) "$<" %* & exit /b'
 
 else
 
 $(BIN_DIR)/javascript-%$(INTP_EXE): src/javascript/%/main.js | $(BIN_DIR)
-	@printf '%s\n\n' "#!$(shell $(NODE) -e 'console.log(process.execPath)') $(NODEFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
+	@printf '%s\n\n' "#!$(shell $(MISE_EXEC) which node) $(NODEFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
 
 $(BIN_DIR)/julia-%$(INTP_EXE): src/julia/%/main.jl | $(BIN_DIR)
-	@printf '%s\n\n' "#!$(shell $(JULIA) -e 'println(joinpath(Sys.BINDIR, "julia"))') $(JULIAFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
+	@printf '%s\n\n' "#!$(shell $(MISE_EXEC) which julia) $(JULIAFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
 
 $(BIN_DIR)/lua-%$(INTP_EXE): src/lua/%/main.lua | $(BIN_DIR)
 	@printf '%s\n\n' "#!$(shell $(MISE_EXEC) which lua) $(LUAFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
 
 $(BIN_DIR)/python-%$(INTP_EXE): src/python/%/main.py | $(BIN_DIR)
-	@printf '%s\n\n' "#!$(shell $(PYTHON) -c 'import sys; print(sys.executable)') $(PYTHONFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
+	@printf '%s\n\n' "#!$(shell $(MISE_EXEC) which python) $(PYTHONFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
 
 $(BIN_DIR)/ruby-%$(INTP_EXE): src/ruby/%/main.rb | $(BIN_DIR)
-	@printf '%s\n\n' "#!$(shell $(RUBY) -e 'puts RbConfig.ruby') $(RUBYFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
+	@printf '%s\n\n' "#!$(shell $(MISE_EXEC) which ruby) $(RUBYFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
 
 endif
 
