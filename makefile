@@ -132,36 +132,36 @@ $(BIN_DIR)/zig-%$(COMP_EXE): src/zig/%/main.zig | $(BIN_DIR)
 ifeq ($(OS),windows)
 
 $(BIN_DIR)/javascript-%$(INTP_EXE): src/javascript/%/main.js | $(BIN_DIR)
-	@Set-Content -Path $@ -Value '@"$(shell $(MISE_EXEC) which node)" $(NODEFLAGS) "$<" %* & exit /b'
+	@Set-Content -Path $@ -Value '@"$(shell mise which node)" $(NODEFLAGS) "$<" %* & exit /b'
 
 $(BIN_DIR)/julia-%$(INTP_EXE): src/julia/%/main.jl | $(BIN_DIR)
-	@Set-Content -Path $@ -Value '@"$(shell $(MISE_EXEC) which julia)" $(JULIAFLAGS) "$<" %* & exit /b'
+	@Set-Content -Path $@ -Value '@"$(shell mise which julia)" $(JULIAFLAGS) "$<" %* & exit /b'
 
 $(BIN_DIR)/lua-%$(INTP_EXE): src/lua/%/main.lua | $(BIN_DIR)
-	@Set-Content -Path $@ -Value '@"$(shell $(MISE_EXEC) which lua)" $(LUAFLAGS) "$<" %* & exit /b'
+	@Set-Content -Path $@ -Value '@"$(shell mise which lua)" $(LUAFLAGS) "$<" %* & exit /b'
 
 $(BIN_DIR)/python-%$(INTP_EXE): src/python/%/main.py | $(BIN_DIR)
-	@Set-Content -Path $@ -Value '@"$(shell $(MISE_EXEC) which python)" $(PYTHONFLAGS) "$<" %* & exit /b'
+	@Set-Content -Path $@ -Value '@"$(shell mise which python)" $(PYTHONFLAGS) "$<" %* & exit /b'
 
 $(BIN_DIR)/ruby-%$(INTP_EXE): src/ruby/%/main.rb | $(BIN_DIR)
-	@Set-Content -Path $@ -Value '@"$(shell $(MISE_EXEC) which ruby)" $(RUBYFLAGS) "$<" %* & exit /b'
+	@Set-Content -Path $@ -Value '@"$(shell mise which ruby)" $(RUBYFLAGS) "$<" %* & exit /b'
 
 else
 
 $(BIN_DIR)/javascript-%$(INTP_EXE): src/javascript/%/main.js | $(BIN_DIR)
-	@printf '%s\n\n' "#!$(shell $(MISE_EXEC) which node) $(NODEFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
+	@printf '%s\n\n' "#!$(shell mise which node) $(NODEFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
 
 $(BIN_DIR)/julia-%$(INTP_EXE): src/julia/%/main.jl | $(BIN_DIR)
-	@printf '%s\n\n' "#!$(shell $(MISE_EXEC) which julia) $(JULIAFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
+	@printf '%s\n\n' "#!$(shell mise which julia) $(JULIAFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
 
 $(BIN_DIR)/lua-%$(INTP_EXE): src/lua/%/main.lua | $(BIN_DIR)
-	@printf '%s\n\n' "#!$(shell $(MISE_EXEC) which lua) $(LUAFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
+	@printf '%s\n\n' "#!$(shell mise which lua) $(LUAFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
 
 $(BIN_DIR)/python-%$(INTP_EXE): src/python/%/main.py | $(BIN_DIR)
-	@printf '%s\n\n' "#!$(shell $(MISE_EXEC) which python) $(PYTHONFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
+	@printf '%s\n\n' "#!$(shell mise which python) $(PYTHONFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
 
 $(BIN_DIR)/ruby-%$(INTP_EXE): src/ruby/%/main.rb | $(BIN_DIR)
-	@printf '%s\n\n' "#!$(shell $(MISE_EXEC) which ruby) $(RUBYFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
+	@printf '%s\n\n' "#!$(shell mise which ruby) $(RUBYFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
 
 endif
 
