@@ -177,7 +177,7 @@ format-odin:
 	$(ODINFMT) -w $(wildcard src/odin/*/*.odin)
 
 format-python:
-	$(RUFF) format --no-cache $(wildcard src/python/*/*.py)
+	$(RUFF) format --no-cache --quiet $(wildcard src/python/*/*.py)
 
 format-rust:
 	$(RUSTFMT) $(wildcard src/rust/*/*.rs)
