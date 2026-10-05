@@ -28,9 +28,14 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: jdx/mise-action@v5
+      - name: Setup Mise
         env:
           TEMP: ${{runner.temp}}
+        uses: jdx/mise-action@v5
+
+      - name: Setup Fortran
+        if: runner.os == 'macOS'
+        uses: fortran-lang/setup-fortran@v1
 
       - name: Setup the Environment
         run: make setup ${{runner.os == 'Windows' && 'ghcup/bin/ghc.exe' || '.ghcup/bin/ghc'}}

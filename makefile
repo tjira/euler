@@ -39,11 +39,11 @@ GHC_VERSION := $(shell mise config get env.GHC_VERSION)
 GHCUP := $(MISE_EXEC) ghcup
 
 CC          := gcc
-CFLAGS      := -O3 -s
+CFLAGS      := -O3 $(if $(filter $(OS),macos),,-s)
 CXX         := g++
-CXXFLAGS    := -O3 -s
+CXXFLAGS    := -O3 $(if $(filter $(OS),macos),,-s)
 FC          := gfortran
-FCFLAGS     := -O3 -s
+FCFLAGS     := -O3 $(if $(filter $(OS),macos),,-s)
 GHC         := $(if $(filter $(OS),windows),ghcup/bin/ghc.exe,.ghcup/bin/ghc)
 GHCFLAGS    := -O3 -optl-s -v0
 GO          := $(MISE_EXEC) go
