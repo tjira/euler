@@ -23,6 +23,9 @@ jobs:
 
       - uses: jdx/mise-action@v5
 
+      - name: Setup the Environment
+        run: make setup .ghcup/bin/ghc
+
       - name: Build the Programs
         run: make
 
