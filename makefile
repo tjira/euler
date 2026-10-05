@@ -126,7 +126,6 @@ $(BIN_DIR)/zig-%$(COMP_EXE): src/zig/%/main.zig | $(BIN_DIR)
 	$(ZIG) build-exe $(ZIGFLAGS) -femit-bin="$@" $<
 
 ifeq ($(OS),windows)
-
 $(BIN_DIR)/javascript-%$(INTP_EXE): src/javascript/%/main.js | $(BIN_DIR)
 	@Set-Content -Path $@ -Value '@"$(shell mise which node)" $(NODEFLAGS) "$<" %* & exit /b'
 
@@ -135,9 +134,7 @@ $(BIN_DIR)/julia-%$(INTP_EXE): src/julia/%/main.jl | $(BIN_DIR)
 
 $(BIN_DIR)/python-%$(INTP_EXE): src/python/%/main.py | $(BIN_DIR)
 	@Set-Content -Path $@ -Value '@"$(shell mise which python)" $(PYTHONFLAGS) "$<" %* & exit /b'
-
 else
-
 $(BIN_DIR)/javascript-%$(INTP_EXE): src/javascript/%/main.js | $(BIN_DIR)
 	@printf '%s\n\n' "#!$(shell mise which node) $(NODEFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
 
@@ -146,7 +143,6 @@ $(BIN_DIR)/julia-%$(INTP_EXE): src/julia/%/main.jl | $(BIN_DIR)
 
 $(BIN_DIR)/python-%$(INTP_EXE): src/python/%/main.py | $(BIN_DIR)
 	@printf '%s\n\n' "#!$(shell mise which python) $(PYTHONFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
-
 endif
 
 # FORMAT TARGETS ===============================================================================================================================================
@@ -200,8 +196,13 @@ $(RUN_TARGETS): run-%: $$(call BIN_TARGET,%)
 
 test: $(TEST_TASKS)
 
+ifeq ($(OS),windows)
+$(TEST_TASKS): test-%: $$(call BIN_TARGET,%)
+	@if ((& $<) -eq '$(word $(lastword $(subst -, ,$*)),$(RESULTS))') { Write-Host 'PASS $<' -ForegroundColor Green } else { Write-Host 'FAIL $<' -ForegroundColor Red; exit 1 }
+else
 $(TEST_TASKS): test-%: $$(call BIN_TARGET,%)
 	@[ "$$($<)" = "$(word $(lastword $(subst -, ,$*)),$(RESULTS))" ] && printf "\033[0;32mPASS %s\033[0m\n" "$<" || { printf "\033[0;31mFAIL %s\033[0m\n" "$<"; exit 1; }
+endif
 
 # COMPILER DOWNLOAD TARGETS ====================================================================================================================================
 
