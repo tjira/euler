@@ -209,7 +209,7 @@ $(GHC):
 	@$(GHCUP) install ghc $(GHC_VERSION) --set
 
 setup:
-	@mise install $(if $(filter windows,$(OS)),;,&&) $(JULIA) -e 'import Pkg; Base.find_package("JuliaFormatter") !== nothing || Pkg.add("JuliaFormatter")'
+	@mise install $(if $(filter windows,$(OS)),;,&&) $(JULIA) -e 'import Pkg; Base.find_package(string(:JuliaFormatter)) !== nothing || Pkg.add(string(:JuliaFormatter))'
 
 # DIRECTORY CREATION TARGETS ===================================================================================================================================
 

@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   test:
-    name: Test on ${{matrix.os}}
+    name: ${{matrix.os}}
     runs-on: ${{matrix.os}}
 
     strategy:
@@ -29,6 +29,8 @@ jobs:
       - uses: actions/checkout@v7
 
       - uses: jdx/mise-action@v5
+        with:
+          cache: false
 
       - name: Setup the Environment
         run: make setup .ghcup/bin/ghc
