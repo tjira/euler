@@ -3,30 +3,28 @@
 GHC_VERSION = "9.14.1"
 
 [tools]
-# Compilers
+# Compilers with Semantic Versioning
 go     = "1.24.13"
 julia  = "1.13.1"
-lua    = "5.4.7"
 nim    = "2.2.12"
 node   = "26.10.0"
-odin   = "dev-2026-09"
 python = "3.13.16"
-ruby   = "3.4.11"
 rust   = "1.99.0"
 zig    = "0.16.0"
+
+# Compilers with Date-Based Versioning
+odin = "dev-2026-09"
 
 # Compiler Bootstrappers
 ghcup = "0.2.6.2"
 
-# Formatters
+# Formatters with Semantic Versioning
 clang-format = "23.1.2"
-ols          = "dev-2026-08"
 ormolu       = "0.9.0.0"
 ruff         = "0.16.10"
-stylua       = "2.5.2"
 
-# Formatters from Gems
-"gem:rubocop" = "1.91.0"
+# Formatters with Date-Based Versioning
+ols = "dev-2026-08"
 
 # Formatters from Conda
 "conda:fprettify" = "0.3.7"

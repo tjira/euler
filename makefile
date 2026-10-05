@@ -50,18 +50,14 @@ GO          := $(MISE_EXEC) go
 GOFLAGS     := -ldflags="-s -w"
 JULIA       := $(MISE_EXEC) julia
 JULIAFLAGS  :=
-LUA         := $(MISE_EXEC) lua
-LUAFLAGS    :=
 NIM         := $(MISE_EXEC) nim
-NIMFLAGS    := -d:release --opt:speed --hints:off
+NIMFLAGS    := --define:release --opt:speed --hints:off
 NODE        := $(MISE_EXEC) node
 NODEFLAGS   :=
 ODIN        := $(MISE_EXEC) odin
 ODINFLAGS   := -o:speed
 PYTHON      := $(MISE_EXEC) python
 PYTHONFLAGS := -O
-RUBY        := $(MISE_EXEC) ruby
-RUBYFLAGS   :=
 RUSTC       := $(MISE_EXEC) rustc
 RUSTFLAGS   := -C opt-level=3 -C strip=symbols $(if $(filter $(OS),windows),-C link-arg=/DEBUG:NONE)
 ZIG         := $(MISE_EXEC) zig
@@ -75,10 +71,8 @@ GOFMT        := $(MISE_EXEC) gofmt
 NIMPRETTY    := $(MISE_EXEC) nimpretty
 ODINFMT      := $(MISE_EXEC) odinfmt
 ORMOLU       := $(MISE_EXEC) ormolu
-RUBOCOP      := $(MISE_EXEC) rubocop
 RUFF         := $(MISE_EXEC) ruff
 RUSTFMT      := $(MISE_EXEC) rustfmt
-STYLUA       := $(MISE_EXEC) stylua
 ZIG_FMT      := $(MISE_EXEC) zig fmt
 
 FORMATS := $(patsubst src/%/,format-%,$(dir $(wildcard src/*/)))
@@ -96,7 +90,7 @@ RESULTS = \
 TEST_TASKS := $(subst /,-,$(patsubst src/%/,test-%,$(dir $(wildcard src/*/*/main.*))))
 RUN_TARGETS := $(subst /,-,$(patsubst src/%/,run-%,$(dir $(wildcard src/*/*/main.*))))
 
-BIN_TARGET = $(if $(filter javascript-% julia-% lua-% python-% ruby-%,$1),$(BIN_DIR)/$1$(INTP_EXE),$(BIN_DIR)/$1$(COMP_EXE))
+BIN_TARGET = $(if $(filter javascript-% julia-% python-%,$1),$(BIN_DIR)/$1$(INTP_EXE),$(BIN_DIR)/$1$(COMP_EXE))
 
 .PHONY: $(FORMATS) $(RUN_TARGETS) $(TEST_TASKS)
 
@@ -120,7 +114,7 @@ $(BIN_DIR)/haskell-%$(COMP_EXE): src/haskell/%/main.hs | $(BIN_DIR) $(BUILD_DIR)
 	$(GHC) $(GHCFLAGS) -outputdir $(BUILD_DIR)/.ghc-$* -o $@ $<
 
 $(BIN_DIR)/nim-%$(COMP_EXE): src/nim/%/main.nim | $(BIN_DIR)
-	$(NIM) c $(NIMFLAGS) -o:$@ $<
+	$(NIM) c $(NIMFLAGS) --out:$@ $<
 
 $(BIN_DIR)/odin-%$(COMP_EXE): src/odin/%/main.odin | $(BIN_DIR)
 	$(ODIN) build $< -file -out:$@ $(ODINFLAGS)
@@ -139,14 +133,8 @@ $(BIN_DIR)/javascript-%$(INTP_EXE): src/javascript/%/main.js | $(BIN_DIR)
 $(BIN_DIR)/julia-%$(INTP_EXE): src/julia/%/main.jl | $(BIN_DIR)
 	@Set-Content -Path $@ -Value '@"$(shell mise which julia)" $(JULIAFLAGS) "$<" %* & exit /b'
 
-$(BIN_DIR)/lua-%$(INTP_EXE): src/lua/%/main.lua | $(BIN_DIR)
-	@Set-Content -Path $@ -Value '@"$(shell mise which lua)" $(LUAFLAGS) "$<" %* & exit /b'
-
 $(BIN_DIR)/python-%$(INTP_EXE): src/python/%/main.py | $(BIN_DIR)
 	@Set-Content -Path $@ -Value '@"$(shell mise which python)" $(PYTHONFLAGS) "$<" %* & exit /b'
-
-$(BIN_DIR)/ruby-%$(INTP_EXE): src/ruby/%/main.rb | $(BIN_DIR)
-	@Set-Content -Path $@ -Value '@"$(shell mise which ruby)" $(RUBYFLAGS) "$<" %* & exit /b'
 
 else
 
@@ -156,14 +144,8 @@ $(BIN_DIR)/javascript-%$(INTP_EXE): src/javascript/%/main.js | $(BIN_DIR)
 $(BIN_DIR)/julia-%$(INTP_EXE): src/julia/%/main.jl | $(BIN_DIR)
 	@printf '%s\n\n' "#!$(shell mise which julia) $(JULIAFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
 
-$(BIN_DIR)/lua-%$(INTP_EXE): src/lua/%/main.lua | $(BIN_DIR)
-	@printf '%s\n\n' "#!$(shell mise which lua) $(LUAFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
-
 $(BIN_DIR)/python-%$(INTP_EXE): src/python/%/main.py | $(BIN_DIR)
 	@printf '%s\n\n' "#!$(shell mise which python) $(PYTHONFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
-
-$(BIN_DIR)/ruby-%$(INTP_EXE): src/ruby/%/main.rb | $(BIN_DIR)
-	@printf '%s\n\n' "#!$(shell mise which ruby) $(RUBYFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
 
 endif
 
@@ -192,9 +174,6 @@ format-javascript:
 format-julia:
 	$(JULIA) -e "using JuliaFormatter; foreach(format_file, ARGS)" $(wildcard src/julia/*/*.jl)
 
-format-lua:
-	$(STYLUA) $(wildcard src/lua/*/*.lua)
-
 format-nim:
 	$(NIMPRETTY) $(wildcard src/nim/*/*.nim)
 
@@ -203,9 +182,6 @@ format-odin:
 
 format-python:
 	$(RUFF) format --no-cache $(wildcard src/python/*/*.py)
-
-format-ruby:
-	$(RUBOCOP) --disable-pending-cops --format quiet -x $(wildcard src/ruby/*/*.rb)
 
 format-rust:
 	$(RUSTFMT) $(wildcard src/rust/*/*.rs)
