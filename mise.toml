@@ -20,6 +20,9 @@ ormolu       = "0.9.0.0"
 # Formatters from Conda
 "conda:fprettify" = "0.3.7"
 
+[settings]
+disable_hints = ["*"]
+
 [tasks.all]
 description = "Build Programs"
 run = "make all"
