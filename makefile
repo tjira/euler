@@ -5,7 +5,8 @@ SHELL := $(if $(filter $(OS),Windows_NT),powershell.exe,sh)
 # ENVIRONMENT VARIABLES ========================================================================================================================================
 
 export GHCUP_INSTALL_BASE_PREFIX := $(CURDIR)
-export MISE_DATA_DIR             := $(CURDIR)/.mise
+
+MISE_EXEC ?= $(if $(__MISE_DIFF),,mise exec --)
 
 # OUTPUT DIRECTORIES ===========================================================================================================================================
 
@@ -25,34 +26,34 @@ GHC_VERSION  := 9.14.1
 
 # COMPILER COMMANDS AND FLAGS ==================================================================================================================================
 
-GHCUP := .mise/shims/ghcup$(EXE)
+GHCUP := $(MISE_EXEC) ghcup
 
 CC          := gcc
-CFLAGS      := -O3
+CFLAGS      := -O3 -s
 CXX         := g++
-CXXFLAGS    := -O3
+CXXFLAGS    := -O3 -s
 FC          := gfortran
-FCFLAGS     := -O3
-GHC         := $(if $(filter $(OS),windows),./ghcup/bin/ghc.exe,./.ghcup/bin/ghc)
-GHCFLAGS    := -O3
-GO          := .mise/shims/go$(EXE)
-GOFLAGS     :=
-PYTHON      := .mise/shims/python$(EXE)
+FCFLAGS     := -O3 -s
+GHC         := $(if $(filter $(OS),windows),ghcup/bin/ghc.exe,.ghcup/bin/ghc)
+GHCFLAGS    := -O3 -optl-s
+GO          := $(MISE_EXEC) go
+GOFLAGS     := -ldflags="-s -w"
+PYTHON      := $(MISE_EXEC) python
 PYTHONFLAGS :=
-RUSTC       := .mise/shims/rustc$(EXE)
-RUSTFLAGS   := -C debuginfo=0 -C opt-level=3 $(if $(filter $(OS),windows),-C link-arg=/DEBUG:NONE)
-ZIG         := .mise/shims/zig$(EXE)
+RUSTC       := $(MISE_EXEC) rustc
+RUSTFLAGS   := -C opt-level=3 -C strip=symbols $(if $(filter $(OS),windows),-C link-arg=/DEBUG:NONE)
+ZIG         := $(MISE_EXEC) zig
 ZIGFLAGS    := -O ReleaseFast -fstrip
 
 # FORMATTER COMMANDS ===========================================================================================================================================
 
-CLANG_FORMAT := .mise/shims/clang-format$(EXE)
-FPRETTIFY    := .mise/shims/fprettify$(EXE)
-GOFMT        := .mise/shims/gofmt$(EXE)
-ORMOLU       := .mise/shims/ormolu$(EXE)
-RUFF         := .mise/shims/ruff$(EXE)
-RUSTFMT      := .mise/shims/rustfmt$(EXE)
-ZIG_FMT      := $(ZIG) fmt
+CLANG_FORMAT := $(MISE_EXEC) clang-format
+FPRETTIFY    := $(MISE_EXEC) fprettify
+GOFMT        := $(MISE_EXEC) gofmt
+ORMOLU       := $(MISE_EXEC) ormolu
+RUFF         := $(MISE_EXEC) ruff
+RUSTFMT      := $(MISE_EXEC) rustfmt
+ZIG_FMT      := $(MISE_EXEC) zig fmt
 
 FORMATS := $(patsubst src/%/,format-%,$(dir $(wildcard src/*/)))
 
@@ -83,7 +84,7 @@ $(BIN_DIR)/cpp-%$(EXE): src/cpp/%/main.cpp | $(BIN_DIR)
 $(BIN_DIR)/fortran-%$(EXE): src/fortran/%/main.f90 | $(BIN_DIR)
 	$(FC) $(FCFLAGS) -o $@ $<
 
-$(BIN_DIR)/go-%$(EXE): src/go/%/main.go | $(BIN_DIR) $(GO)
+$(BIN_DIR)/go-%$(EXE): src/go/%/main.go | $(BIN_DIR)
 	$(GO) build $(GOFLAGS) -o $@ $<
 
 $(BIN_DIR)/haskell-%$(EXE): src/haskell/%/main.hs | $(BIN_DIR) $(BUILD_DIR) $(GHC)
@@ -92,38 +93,38 @@ $(BIN_DIR)/haskell-%$(EXE): src/haskell/%/main.hs | $(BIN_DIR) $(BUILD_DIR) $(GH
 $(BIN_DIR)/python-%$(EXE): src/python/%/main.py | $(BIN_DIR)
 	cp $< $@ $(if $(filter $(OS),windows),,&& chmod +x $@)
 
-$(BIN_DIR)/rust-%$(EXE): src/rust/%/main.rs | $(BIN_DIR) $(RUSTC)
+$(BIN_DIR)/rust-%$(EXE): src/rust/%/main.rs | $(BIN_DIR)
 	$(RUSTC) $(RUSTFLAGS) -o $@ $<
 
-$(BIN_DIR)/zig-%$(EXE): src/zig/%/main.zig | $(BIN_DIR) $(ZIG)
+$(BIN_DIR)/zig-%$(EXE): src/zig/%/main.zig | $(BIN_DIR)
 	$(ZIG) build-exe $(ZIGFLAGS) -femit-bin="$@" $<
 
 # FORMAT TARGETS ===============================================================================================================================================
 
 format: $(FORMATS)
 
-format-c: $(CLANG_FORMAT)
+format-c:
 	$(CLANG_FORMAT) -i $(wildcard src/c/*/*.c)
 
-format-cpp: $(CLANG_FORMAT)
+format-cpp:
 	$(CLANG_FORMAT) -i $(wildcard src/cpp/*/*.cpp)
 
-format-fortran: $(FPRETTIFY)
+format-fortran:
 	$(FPRETTIFY) $(wildcard src/fortran/*/*.f90)
 
-format-go: $(GOFMT)
+format-go:
 	$(GOFMT) -w $(wildcard src/go/*/*.go)
 
-format-haskell: $(ORMOLU)
+format-haskell:
 	$(ORMOLU) --mode inplace $(wildcard src/haskell/*/*.hs)
 
-format-python: $(RUFF)
+format-python:
 	$(RUFF) format --no-cache $(wildcard src/python/*/*.py)
 
-format-rust: $(RUSTFMT)
+format-rust:
 	$(RUSTFMT) $(wildcard src/rust/*/*.rs)
 
-format-zig: $(ZIG)
+format-zig:
 	$(ZIG_FMT) $(wildcard src/zig/*/*.zig)
 
 # RUN TARGETS ==================================================================================================================================================
@@ -142,10 +143,10 @@ $(TESTS): test-%: $(BIN_DIR)/%$(EXE)
 
 # COMPILER DOWNLOAD TARGETS ====================================================================================================================================
 
-$(GHC): | $(GHCUP)
+$(GHC):
 	@$(GHCUP) install ghc $(GHC_VERSION) --set
 
-$(CLANG_FORMAT) $(FPRETTIFY) $(GHCUP) $(GO) $(GOFMT) $(ORMOLU) $(PYTHON) $(RUFF) $(RUSTC) $(RUSTFMT) $(ZIG):
+setup:
 	@mise install
 
 # DIRECTORY CREATION TARGETS ===================================================================================================================================
@@ -156,4 +157,4 @@ $(BUILD_DIR) $(BIN_DIR):
 # ADDITIONAL TARGETS ===========================================================================================================================================
 
 clean:
-	@git clean -dffx
+	@git clean -dffx -e .ghcup -e ghcup -e .mise

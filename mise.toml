@@ -19,3 +19,19 @@ ormolu       = "0.9.0.0"
 
 # Formatters from Conda
 "conda:fprettify" = "0.3.7"
+
+[tasks.all]
+description = "Build Programs"
+run = "make all"
+
+[tasks.test]
+description = "Run Tests"
+run = "make test"
+
+[tasks.format]
+description = "Format Source files"
+run = "make format"
+
+[tasks.clean]
+description = "Clean Build Artifacts"
+run = "make clean"
