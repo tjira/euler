@@ -256,6 +256,9 @@ $(GHC): | .mise/installs/ghcup
 julia: | .mise/installs/julia
 	@$(JULIA) -e 'import Pkg; Base.find_package(string(:JuliaFormatter)) !== nothing || Pkg.add(string(:JuliaFormatter))'
 
+mise:
+	@mise install
+
 # DIRECTORY CREATION TARGETS ===================================================================================================================================
 
 $(BUILD_DIR) $(BIN_DIR):
