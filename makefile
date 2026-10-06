@@ -17,6 +17,8 @@ MISE_EXEC ?= $(if $(__MISE_DIFF),,mise exec --)
 
 export MISE_DATA_DIR := $(CURDIR)/.mise
 
+export MISE_EXEC_AUTO_INSTALL := false
+
 # OUTPUT DIRECTORIES ===========================================================================================================================================
 
 BUILD_DIR := build
@@ -32,7 +34,7 @@ INTP_EXE := $(if $(filter $(OS),windows),.cmd)
 
 # COMPILER VERSIONS ============================================================================================================================================
 
-GHC_VERSION := $(shell mise config get env.GHC_VERSION)
+GHC_VERSION = $(shell mise config get env.GHC_VERSION)
 
 # COMPILER COMMANDS AND FLAGS ==================================================================================================================================
 
@@ -59,7 +61,7 @@ ODINFLAGS   := --microarch:native --o:speed
 PYTHON      := $(MISE_EXEC) python
 PYTHONFLAGS := -OOS
 RUSTC       := $(MISE_EXEC) rustc
-RUSTFLAGS   := -C opt-level=3 -C strip=symbols -C target-cpu=native $(if $(filter $(OS),windows),-C link-arg=/DEBUG:NONE)
+RUSTFLAGS   := -C opt-level=3 -C strip=symbols -C target-cpu=native$(if $(filter $(OS),windows), -C link-arg=/DEBUG:NONE)
 ZIG         := $(MISE_EXEC) zig
 ZIGFLAGS    := -O ReleaseFast -mcpu=native -fstrip --color off
 
@@ -101,9 +103,9 @@ BIN_TARGET = $(if $(filter javascript-% julia-% python-%,$1),$(BIN_DIR)/$1$(INTP
 
 .PHONY: $(BENCHMARK_TARGETS) $(FORMATS) $(RUN_TARGETS) $(TEST_TASKS) benchmark
 
-all: setup $(foreach t,$(TEST_TASKS:test-%=%),$(call BIN_TARGET,$(t)))
+all: $(foreach t,$(TEST_TASKS:test-%=%),$(call BIN_TARGET,$(t)))
 
-# BUILD TARGETS ================================================================================================================================================
+# BUILD TARGETS FOR PROJECTS WITH BUILT-IN COMPILERS ======================================================================================================-----
 
 $(BIN_DIR)/c-%$(COMP_EXE): src/c/%/main.c | $(BIN_DIR) $(BUILD_DIR)/.c-%
 	$(CC) $(CFLAGS) -o $@ $<
@@ -114,41 +116,47 @@ $(BIN_DIR)/cpp-%$(COMP_EXE): src/cpp/%/main.cpp | $(BIN_DIR) $(BUILD_DIR)/.cpp-%
 $(BIN_DIR)/fortran-%$(COMP_EXE): src/fortran/%/main.f90 | $(BIN_DIR) $(BUILD_DIR)/.fortran-%
 	$(FC) $(FCFLAGS) -J $(BUILD_DIR)/.fortran-$* -o $@ $<
 
-$(BIN_DIR)/go-%$(COMP_EXE): src/go/%/main.go | $(BIN_DIR)
+# BUILD TARGETS FOR PROJECTS WITH MISE-EXECUTABLE COMPILERS ====================================================================================================
+
+$(BIN_DIR)/go-%$(COMP_EXE): src/go/%/main.go | $(BIN_DIR) .mise/installs/go
 	$(GO) build $(GOFLAGS) -o $@ $<
 
-$(BIN_DIR)/haskell-%$(COMP_EXE): src/haskell/%/main.hs | $(BIN_DIR) $(BUILD_DIR)/.ghc-%
-	$(GHC) $(GHCFLAGS) -outputdir $(BUILD_DIR)/.ghc-$* -o $@ $<
-
-$(BIN_DIR)/nim-%$(COMP_EXE): src/nim/%/main.nim | $(BIN_DIR) $(BUILD_DIR)/.nim-%
+$(BIN_DIR)/nim-%$(COMP_EXE): src/nim/%/main.nim | $(BIN_DIR) $(BUILD_DIR)/.nim-% .mise/installs/nim
 	$(NIM) c $(NIMFLAGS) --out:$@ $<
 
-$(BIN_DIR)/odin-%$(COMP_EXE): src/odin/%/main.odin | $(BIN_DIR) $(BUILD_DIR)/.odin-%
+$(BIN_DIR)/odin-%$(COMP_EXE): src/odin/%/main.odin | $(BIN_DIR) $(BUILD_DIR)/.odin-% .mise/installs/odin
 	$(ODIN) build $< -file --out:$@ $(ODINFLAGS)
 
-$(BIN_DIR)/rust-%$(COMP_EXE): src/rust/%/main.rs | $(BIN_DIR) $(BUILD_DIR)/.rust-%
+$(BIN_DIR)/rust-%$(COMP_EXE): src/rust/%/main.rs | $(BIN_DIR) $(BUILD_DIR)/.rust-% .mise/installs/rust
 	$(RUSTC) $(RUSTFLAGS) -o $@ $<
 
-$(BIN_DIR)/zig-%$(COMP_EXE): src/zig/%/main.zig | $(BIN_DIR) $(BUILD_DIR)/.zig-%
+$(BIN_DIR)/zig-%$(COMP_EXE): src/zig/%/main.zig | $(BIN_DIR) $(BUILD_DIR)/.zig-% .mise/installs/zig
 	$(ZIG) build-exe $(ZIGFLAGS) -femit-bin="$@" $<
 
+# BUILD TARGETS FOR PROJECTS WITH EXTERNAL COMPILERS ===========================================================================================================
+
+$(BIN_DIR)/haskell-%$(COMP_EXE): src/haskell/%/main.hs | $(BIN_DIR) $(BUILD_DIR)/.ghc-% $(GHC)
+	$(GHC) $(GHCFLAGS) -outputdir $(BUILD_DIR)/.ghc-$* -o $@ $<
+
+# BUILD TARGETS FOR PROJECTS WITH INTERPRETER SCRIPTS ==========================================================================================================
+
 ifeq ($(OS),windows)
-$(BIN_DIR)/javascript-%$(INTP_EXE): src/javascript/%/main.js | $(BIN_DIR) $(BUILD_DIR)/.javascript-%
+$(BIN_DIR)/javascript-%$(INTP_EXE): src/javascript/%/main.js | $(BIN_DIR) $(BUILD_DIR)/.javascript-% .mise/installs/node
 	@Set-Content -Path $@ -Value '@"$(shell mise which node)" $(NODEFLAGS) "$<" %* & exit /b'
 
-$(BIN_DIR)/julia-%$(INTP_EXE): src/julia/%/main.jl | $(BIN_DIR) $(BUILD_DIR)/.julia-%
+$(BIN_DIR)/julia-%$(INTP_EXE): src/julia/%/main.jl | $(BIN_DIR) $(BUILD_DIR)/.julia-% .mise/installs/julia
 	@Set-Content -Path $@ -Value '@"$(shell mise which julia)" $(JULIAFLAGS) "$<" %* & exit /b'
 
-$(BIN_DIR)/python-%$(INTP_EXE): src/python/%/main.py | $(BIN_DIR) $(BUILD_DIR)/.python-%
+$(BIN_DIR)/python-%$(INTP_EXE): src/python/%/main.py | $(BIN_DIR) $(BUILD_DIR)/.python-% .mise/installs/python
 	@Set-Content -Path $@ -Value '@"$(shell mise which python)" $(PYTHONFLAGS) "$<" %* & exit /b'
 else
-$(BIN_DIR)/javascript-%$(INTP_EXE): src/javascript/%/main.js | $(BIN_DIR) $(BUILD_DIR)/.javascript-%
+$(BIN_DIR)/javascript-%$(INTP_EXE): src/javascript/%/main.js | $(BIN_DIR) $(BUILD_DIR)/.javascript-% .mise/installs/node
 	@printf '%s\n\n' "#!$(shell mise which node) $(NODEFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
 
-$(BIN_DIR)/julia-%$(INTP_EXE): src/julia/%/main.jl | $(BIN_DIR) $(BUILD_DIR)/.julia-%
+$(BIN_DIR)/julia-%$(INTP_EXE): src/julia/%/main.jl | $(BIN_DIR) $(BUILD_DIR)/.julia-% .mise/installs/julia
 	@printf '%s\n\n' "#!$(shell mise which julia) $(JULIAFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
 
-$(BIN_DIR)/python-%$(INTP_EXE): src/python/%/main.py | $(BIN_DIR) $(BUILD_DIR)/.python-%
+$(BIN_DIR)/python-%$(INTP_EXE): src/python/%/main.py | $(BIN_DIR) $(BUILD_DIR)/.python-% .mise/installs/python
 	@printf '%s\n\n' "#!$(shell mise which python) $(PYTHONFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
 endif
 
@@ -239,14 +247,14 @@ $(BENCHMARK_TARGETS): benchmark-%: $$(call BIN_TARGET,%)
 
 setup: mise julia $(GHC)
 
-$(GHC):
+.mise/installs/%:
+	@mise install $*
+
+$(GHC): | .mise/installs/ghcup
 	@$(GHCUP) install ghc $(GHC_VERSION) --set
 
-julia:
+julia: | .mise/installs/julia
 	@$(JULIA) -e 'import Pkg; Base.find_package(string(:JuliaFormatter)) !== nothing || Pkg.add(string(:JuliaFormatter))'
-
-mise:
-	@mise install
 
 # DIRECTORY CREATION TARGETS ===================================================================================================================================
 
