@@ -237,10 +237,10 @@ endif
 
 benchmark: $(BENCHMARK_TARGETS)
 
-benchmark-%: all
+benchmark-%: all .mise/installs/hyperfine
 	@$(HYPERFINE) $(HYPERFINE_FLAGS) --sort mean-time $(sort $(wildcard $(BIN_DIR)/*-$*$(COMP_EXE) $(BIN_DIR)/*-$*$(INTP_EXE)))
 
-$(BENCHMARK_TARGETS): benchmark-%: $$(call BIN_TARGET,%)
+$(BENCHMARK_TARGETS): benchmark-%: $$(call BIN_TARGET,%) .mise/installs/hyperfine
 	@$(HYPERFINE) $(HYPERFINE_FLAGS) '$<'
 
 # COMPILER DOWNLOAD TARGETS ====================================================================================================================================
