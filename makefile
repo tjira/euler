@@ -39,29 +39,29 @@ GHC_VERSION := $(shell mise config get env.GHC_VERSION)
 GHCUP := $(MISE_EXEC) ghcup
 
 CC          := gcc
-CFLAGS      := -O3 $(if $(filter $(OS),macos),,-s)
+CFLAGS      := -O3 -mtune=native $(if $(filter $(OS),macos),,-s)
 CXX         := g++
-CXXFLAGS    := -O3 $(if $(filter $(OS),macos),,-s)
+CXXFLAGS    := -O3 -mtune=native $(if $(filter $(OS),macos),,-s)
 FC          := gfortran
-FCFLAGS     := -O3 $(if $(filter $(OS),macos),,-s)
+FCFLAGS     := -O3 -mtune=native $(if $(filter $(OS),macos),,-s)
 GHC         := $(if $(filter $(OS),windows),ghcup/bin/ghc.exe,.ghcup/bin/ghc)
-GHCFLAGS    := -O3 -optl-s -v0
+GHCFLAGS    := -O2 -optl-s -v0
 GO          := $(MISE_EXEC) go
 GOFLAGS     := -ldflags="-s -w"
 JULIA       := $(MISE_EXEC) julia
-JULIAFLAGS  :=
+JULIAFLAGS  := -O3
 NIM         := $(MISE_EXEC) nim
-NIMFLAGS    := --define:release --opt:speed --hints:off
+NIMFLAGS    := --define:release --opt:speed --passC:"-march=native" --hints:off
 NODE        := $(MISE_EXEC) node
-NODEFLAGS   :=
+NODEFLAGS   := --turbo-fast-api-calls
 ODIN        := $(MISE_EXEC) odin
-ODINFLAGS   := --o:speed
+ODINFLAGS   := --microarch:native --o:speed
 PYTHON      := $(MISE_EXEC) python
-PYTHONFLAGS := -O
+PYTHONFLAGS := -OOS
 RUSTC       := $(MISE_EXEC) rustc
-RUSTFLAGS   := -C opt-level=3 -C strip=symbols $(if $(filter $(OS),windows),-C link-arg=/DEBUG:NONE)
+RUSTFLAGS   := -C opt-level=3 -C strip=symbols -C target-cpu=native $(if $(filter $(OS),windows),-C link-arg=/DEBUG:NONE)
 ZIG         := $(MISE_EXEC) zig
-ZIGFLAGS    := -O ReleaseFast -fstrip --color off
+ZIGFLAGS    := -O ReleaseFast -mcpu=native -fstrip --color off
 
 # FORMATTER COMMANDS ===========================================================================================================================================
 

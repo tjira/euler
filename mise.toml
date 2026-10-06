@@ -10,7 +10,7 @@ nim    = "2.2.12"
 node   = "26.10.0"
 python = "3.13.16"
 rust   = "1.99.0"
-zig    = "0.16.0"
+zig    = "0.17.0"
 
 # Compilers with Date-Based Versioning
 odin = { version = "dev-2026-09", strip_components = 1, bin_path = "." }
