@@ -51,7 +51,7 @@ GOFLAGS     := -ldflags="-s -w"
 JULIA       := $(MISE_EXEC) julia
 JULIAFLAGS  := -O3
 NIM         := $(MISE_EXEC) nim
-NIMFLAGS    := --define:release --opt:speed --passC:"-march=native" --hints:off
+NIMFLAGS    := --define:release --hints:off --opt:speed --passC:"-march=native"
 NODE        := $(MISE_EXEC) node
 NODEFLAGS   := --turbo-fast-api-calls
 ODIN        := $(MISE_EXEC) odin
