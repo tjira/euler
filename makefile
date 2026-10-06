@@ -105,50 +105,50 @@ all: $(foreach t,$(TEST_TASKS:test-%=%),$(call BIN_TARGET,$(t)))
 
 # BUILD TARGETS ================================================================================================================================================
 
-$(BIN_DIR)/c-%$(COMP_EXE): src/c/%/main.c | $(BIN_DIR)
+$(BIN_DIR)/c-%$(COMP_EXE): src/c/%/main.c | $(BIN_DIR) $(BUILD_DIR)/.c-%
 	$(CC) $(CFLAGS) -o $@ $<
 
-$(BIN_DIR)/cpp-%$(COMP_EXE): src/cpp/%/main.cpp | $(BIN_DIR)
+$(BIN_DIR)/cpp-%$(COMP_EXE): src/cpp/%/main.cpp | $(BIN_DIR) $(BUILD_DIR)/.cpp-%
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
-$(BIN_DIR)/fortran-%$(COMP_EXE): src/fortran/%/main.f90 | $(BIN_DIR)
-	$(FC) $(FCFLAGS) -o $@ $<
+$(BIN_DIR)/fortran-%$(COMP_EXE): src/fortran/%/main.f90 | $(BIN_DIR) $(BUILD_DIR)/.fortran-%
+	$(FC) $(FCFLAGS) -J $(BUILD_DIR)/.fortran-$* -o $@ $<
 
 $(BIN_DIR)/go-%$(COMP_EXE): src/go/%/main.go | $(BIN_DIR)
 	$(GO) build $(GOFLAGS) -o $@ $<
 
-$(BIN_DIR)/haskell-%$(COMP_EXE): src/haskell/%/main.hs | $(BIN_DIR) $(BUILD_DIR) $(GHC)
+$(BIN_DIR)/haskell-%$(COMP_EXE): src/haskell/%/main.hs | $(BIN_DIR) $(BUILD_DIR)/.ghc-%
 	$(GHC) $(GHCFLAGS) -outputdir $(BUILD_DIR)/.ghc-$* -o $@ $<
 
-$(BIN_DIR)/nim-%$(COMP_EXE): src/nim/%/main.nim | $(BIN_DIR)
+$(BIN_DIR)/nim-%$(COMP_EXE): src/nim/%/main.nim | $(BIN_DIR) $(BUILD_DIR)/.nim-%
 	$(NIM) c $(NIMFLAGS) --out:$@ $<
 
-$(BIN_DIR)/odin-%$(COMP_EXE): src/odin/%/main.odin | $(BIN_DIR)
+$(BIN_DIR)/odin-%$(COMP_EXE): src/odin/%/main.odin | $(BIN_DIR) $(BUILD_DIR)/.odin-%
 	$(ODIN) build $< -file --out:$@ $(ODINFLAGS)
 
-$(BIN_DIR)/rust-%$(COMP_EXE): src/rust/%/main.rs | $(BIN_DIR)
+$(BIN_DIR)/rust-%$(COMP_EXE): src/rust/%/main.rs | $(BIN_DIR) $(BUILD_DIR)/.rust-%
 	$(RUSTC) $(RUSTFLAGS) -o $@ $<
 
-$(BIN_DIR)/zig-%$(COMP_EXE): src/zig/%/main.zig | $(BIN_DIR)
+$(BIN_DIR)/zig-%$(COMP_EXE): src/zig/%/main.zig | $(BIN_DIR) $(BUILD_DIR)/.zig-%
 	$(ZIG) build-exe $(ZIGFLAGS) -femit-bin="$@" $<
 
 ifeq ($(OS),windows)
-$(BIN_DIR)/javascript-%$(INTP_EXE): src/javascript/%/main.js | $(BIN_DIR)
+$(BIN_DIR)/javascript-%$(INTP_EXE): src/javascript/%/main.js | $(BIN_DIR) $(BUILD_DIR)/.javascript-%
 	@Set-Content -Path $@ -Value '@"$(shell mise which node)" $(NODEFLAGS) "$<" %* & exit /b'
 
-$(BIN_DIR)/julia-%$(INTP_EXE): src/julia/%/main.jl | $(BIN_DIR)
+$(BIN_DIR)/julia-%$(INTP_EXE): src/julia/%/main.jl | $(BIN_DIR) $(BUILD_DIR)/.julia-%
 	@Set-Content -Path $@ -Value '@"$(shell mise which julia)" $(JULIAFLAGS) "$<" %* & exit /b'
 
-$(BIN_DIR)/python-%$(INTP_EXE): src/python/%/main.py | $(BIN_DIR)
+$(BIN_DIR)/python-%$(INTP_EXE): src/python/%/main.py | $(BIN_DIR) $(BUILD_DIR)/.python-%
 	@Set-Content -Path $@ -Value '@"$(shell mise which python)" $(PYTHONFLAGS) "$<" %* & exit /b'
 else
-$(BIN_DIR)/javascript-%$(INTP_EXE): src/javascript/%/main.js | $(BIN_DIR)
+$(BIN_DIR)/javascript-%$(INTP_EXE): src/javascript/%/main.js | $(BIN_DIR) $(BUILD_DIR)/.javascript-%
 	@printf '%s\n\n' "#!$(shell mise which node) $(NODEFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
 
-$(BIN_DIR)/julia-%$(INTP_EXE): src/julia/%/main.jl | $(BIN_DIR)
+$(BIN_DIR)/julia-%$(INTP_EXE): src/julia/%/main.jl | $(BIN_DIR) $(BUILD_DIR)/.julia-%
 	@printf '%s\n\n' "#!$(shell mise which julia) $(JULIAFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
 
-$(BIN_DIR)/python-%$(INTP_EXE): src/python/%/main.py | $(BIN_DIR)
+$(BIN_DIR)/python-%$(INTP_EXE): src/python/%/main.py | $(BIN_DIR) $(BUILD_DIR)/.python-%
 	@printf '%s\n\n' "#!$(shell mise which python) $(PYTHONFLAGS)" > $@ && cat $< >> $@ && chmod +x $@
 endif
 
@@ -237,15 +237,25 @@ $(BENCHMARK_TARGETS): benchmark-%: $$(call BIN_TARGET,%)
 
 # COMPILER DOWNLOAD TARGETS ====================================================================================================================================
 
+setup: mise julia $(GHC)
+
 $(GHC):
 	@$(GHCUP) install ghc $(GHC_VERSION) --set
 
-setup:
-	@mise install $(if $(filter windows,$(OS)),;,&&) $(JULIA) -e 'import Pkg; Base.find_package(string(:JuliaFormatter)) !== nothing || Pkg.add(string(:JuliaFormatter))'
+julia:
+	$(JULIA) -e 'import Pkg; Base.find_package(string(:JuliaFormatter)) !== nothing || Pkg.add(string(:JuliaFormatter))'
+
+mise:
+	@mise install
 
 # DIRECTORY CREATION TARGETS ===================================================================================================================================
 
 $(BUILD_DIR) $(BIN_DIR):
+	@$(if $(filter windows,$(OS)),mkdir $@ -Force | Out-Null,mkdir -p $@)
+
+.PRECIOUS: $(BUILD_DIR)/.%
+
+$(BUILD_DIR)/.%:
 	@$(if $(filter windows,$(OS)),mkdir $@ -Force | Out-Null,mkdir -p $@)
 
 # ADDITIONAL TARGETS ===========================================================================================================================================
