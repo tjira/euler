@@ -192,6 +192,20 @@ format-rust:
 format-zig:
 	$(ZIG_FMT) $(wildcard src/zig/*/*.zig)
 
+# EDITOR TARGETS ===============================================================================================================================================
+
+nvim: $(sort $(wildcard src/*/*/*))
+	@nvim $^
+
+$(patsubst src/%/,nvim-%,$(dir $(wildcard src/*/))): nvim-%: $$(sort $$(wildcard src/%/*/*))
+	@nvim $^
+
+$(patsubst %,nvim-%,$(sort $(notdir $(patsubst %/,%,$(dir $(wildcard src/*/*/main.*)))))): nvim-%: $$(sort $$(wildcard src/*/%/*))
+	@nvim $^
+
+$(subst /,-,$(patsubst src/%/,nvim-%,$(dir $(wildcard src/*/*/main.*)))): nvim-%: $$(sort $$(wildcard src/$$(subst -,/,%)/*))
+	@nvim $^
+
 # RUN TARGETS ==================================================================================================================================================
 
 run: $(RUN_TARGETS)
