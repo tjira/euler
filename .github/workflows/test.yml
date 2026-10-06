@@ -38,7 +38,7 @@ jobs:
         uses: fortran-lang/setup-fortran@v1
 
       - name: Setup the Environment
-        run: make setup ${{runner.os == 'Windows' && 'ghcup/bin/ghc.exe' || '.ghcup/bin/ghc'}}
+        run: make setup
 
       - name: Build the Programs
         run: make
