@@ -101,7 +101,7 @@ BIN_TARGET = $(if $(filter javascript-% julia-% python-%,$1),$(BIN_DIR)/$1$(INTP
 
 .PHONY: $(BENCHMARK_TARGETS) $(FORMATS) $(RUN_TARGETS) $(TEST_TASKS) benchmark
 
-all: $(foreach t,$(TEST_TASKS:test-%=%),$(call BIN_TARGET,$(t)))
+all: setup $(foreach t,$(TEST_TASKS:test-%=%),$(call BIN_TARGET,$(t)))
 
 # BUILD TARGETS ================================================================================================================================================
 
@@ -243,7 +243,7 @@ $(GHC):
 	@$(GHCUP) install ghc $(GHC_VERSION) --set
 
 julia:
-	$(JULIA) -e 'import Pkg; Base.find_package(string(:JuliaFormatter)) !== nothing || Pkg.add(string(:JuliaFormatter))'
+	@$(JULIA) -e 'import Pkg; Base.find_package(string(:JuliaFormatter)) !== nothing || Pkg.add(string(:JuliaFormatter))'
 
 mise:
 	@mise install
