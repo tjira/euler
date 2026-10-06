@@ -7,7 +7,7 @@ contains
         integer(int64), intent(in) :: n
         integer(int64) :: i
 
-        do i = 1_int64, number_length(n) / 2_int64
+        do i = 1_int64, number_length(n)/2_int64
             if (digit(n, i) /= digit(n, number_length(n) - i + 1_int64)) then
                 is_palindrome = .false.
                 return
@@ -21,7 +21,7 @@ contains
         integer(int64), intent(in) :: n, k
         integer(int64) :: d
 
-        d = mod(n / 10_int64**(k - 1_int64), 10_int64)
+        d = mod(n/10_int64**(k - 1_int64), 10_int64)
     end function digit
 
     function number_length(n) result(len)
@@ -48,13 +48,13 @@ program main
 
     do i = 100_int64, 999_int64
         do j = 100_int64, 999_int64
-            if (is_palindrome(i * j)) then
-                if (i * j > n) then
-                    n = i * j
+            if (is_palindrome(i*j)) then
+                if (i*j > n) then
+                    n = i*j
                 end if
             end if
         end do
     end do
-    
+
     print "(I0)", n
 end program main

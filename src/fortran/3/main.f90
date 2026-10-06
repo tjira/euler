@@ -9,7 +9,7 @@ contains
 
         d = 3
 
-        do while (d * d <= n)
+        do while (d*d <= n)
             if (mod(n, d) == 0_int64) then
                 is_prime = .false.
                 return
@@ -34,7 +34,7 @@ program main
     n = 600851475143_int64
     i = 3_int64
 
-    do while (i * i <= n)
+    do while (i*i <= n)
         if (mod(n, i) == 0) then
             if (is_prime(i)) then
                 d = i
