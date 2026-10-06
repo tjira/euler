@@ -29,5 +29,8 @@ ols = "dev-2026-08"
 # Formatters from Conda
 "conda:fprettify" = "0.3.7"
 
+# Benchmarking Tools
+hyperfine = "1.20.0"
+
 [settings]
 disable_hints = ["*"]

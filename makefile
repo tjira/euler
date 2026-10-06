@@ -75,7 +75,12 @@ RUFF         := $(MISE_EXEC) ruff
 RUSTFMT      := $(MISE_EXEC) rustfmt
 ZIG_FMT      := $(MISE_EXEC) zig fmt
 
-FORMATS := $(patsubst src/%/,format-%,$(dir $(wildcard src/*/)))
+# BENCHMARK COMMANDS ===========================================================================================================================================
+
+HYPERFINE       := $(MISE_EXEC) hyperfine
+HYPERFINE_FLAGS := --min-runs 100 --shell=none --warmup=10
+
+BENCHMARK_TARGETS := $(subst /,-,$(patsubst src/%/,benchmark-%,$(dir $(wildcard src/*/*/main.*))))
 
 # PROBLEM RESULTS ==============================================================================================================================================
 
@@ -87,12 +92,14 @@ RESULTS = \
 
 # GLOBAL TARGETS ===============================================================================================================================================
 
-TEST_TASKS := $(subst /,-,$(patsubst src/%/,test-%,$(dir $(wildcard src/*/*/main.*))))
+FORMATS := $(patsubst src/%/,format-%,$(dir $(wildcard src/*/)))
+
 RUN_TARGETS := $(subst /,-,$(patsubst src/%/,run-%,$(dir $(wildcard src/*/*/main.*))))
+TEST_TASKS := $(subst /,-,$(patsubst src/%/,test-%,$(dir $(wildcard src/*/*/main.*))))
 
 BIN_TARGET = $(if $(filter javascript-% julia-% python-%,$1),$(BIN_DIR)/$1$(INTP_EXE),$(BIN_DIR)/$1$(COMP_EXE))
 
-.PHONY: $(FORMATS) $(RUN_TARGETS) $(TEST_TASKS)
+.PHONY: $(BENCHMARK_TARGETS) $(FORMATS) $(RUN_TARGETS) $(TEST_TASKS) benchmark
 
 all: $(foreach t,$(TEST_TASKS:test-%=%),$(call BIN_TARGET,$(t)))
 
@@ -203,6 +210,16 @@ else
 $(TEST_TASKS): test-%: $$(call BIN_TARGET,%)
 	@[ "$$($<)" = "$(word $(lastword $(subst -, ,$*)),$(RESULTS))" ] && printf "\033[0;32mPASS %s\033[0m\n" "$<" || { printf "\033[0;31mFAIL %s\033[0m\n" "$<"; exit 1; }
 endif
+
+# BENCHMARK TARGETS ============================================================================================================================================
+
+benchmark: $(BENCHMARK_TARGETS)
+
+benchmark-%: all
+	@$(HYPERFINE) $(HYPERFINE_FLAGS) --sort mean-time $(sort $(wildcard $(BIN_DIR)/*-$*$(COMP_EXE) $(BIN_DIR)/*-$*$(INTP_EXE)))
+
+$(BENCHMARK_TARGETS): benchmark-%: $$(call BIN_TARGET,%)
+	@$(HYPERFINE) $(HYPERFINE_FLAGS) '$<'
 
 # COMPILER DOWNLOAD TARGETS ====================================================================================================================================
 
