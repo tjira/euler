@@ -165,40 +165,40 @@ endif
 
 format: $(FORMATS)
 
-format-c:
+format-c: | .mise/installs/clang-format
 	$(CLANG_FORMAT) -i $(wildcard src/c/*/*.c)
 
-format-cpp:
+format-cpp: | .mise/installs/clang-format
 	$(CLANG_FORMAT) -i $(wildcard src/cpp/*/*.cpp)
 
-format-fortran:
+format-fortran: | .mise/installs/conda-fprettify
 	$(FPRETTIFY) $(wildcard src/fortran/*/*.f90)
 
-format-go:
+format-go: | .mise/installs/go
 	$(GOFMT) -w $(wildcard src/go/*/*.go)
 
-format-haskell:
+format-haskell: | .mise/installs/ormolu
 	$(ORMOLU) --mode inplace $(wildcard src/haskell/*/*.hs)
 
-format-javascript:
+format-javascript: | .mise/installs/clang-format
 	$(CLANG_FORMAT) -i $(wildcard src/javascript/*/*.js)
 
-format-julia:
+format-julia: | .mise/installs/julia
 	$(JULIA) -e "using JuliaFormatter; foreach(format_file, ARGS)" $(wildcard src/julia/*/*.jl)
 
-format-nim:
+format-nim: | .mise/installs/nim
 	$(NIMPRETTY) $(wildcard src/nim/*/*.nim)
 
-format-odin:
+format-odin: | .mise/installs/ols
 	$(ODINFMT) -w $(wildcard src/odin/*/*.odin)
 
-format-python:
+format-python: | .mise/installs/ruff
 	$(RUFF) format --no-cache --quiet $(wildcard src/python/*/*.py)
 
-format-rust:
+format-rust: | .mise/installs/rust
 	$(RUSTFMT) $(wildcard src/rust/*/*.rs)
 
-format-zig:
+format-zig: | .mise/installs/zig
 	$(ZIG_FMT) $(wildcard src/zig/*/*.zig)
 
 # EDITOR TARGETS ===============================================================================================================================================
@@ -247,6 +247,9 @@ $(BENCHMARK_TARGETS): benchmark-%: $$(call BIN_TARGET,%) .mise/installs/hyperfin
 # COMPILER DOWNLOAD TARGETS ====================================================================================================================================
 
 setup: mise julia $(GHC)
+
+.mise/installs/conda-%:
+	@mise install conda:$*
 
 .mise/installs/%:
 	@mise install $*
