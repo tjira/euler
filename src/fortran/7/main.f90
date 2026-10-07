@@ -27,20 +27,19 @@ program main
 
     implicit none
 
-    integer(int64) :: n, d, i
+    integer(int64) :: n, p, i
 
-    n = 600851475143_int64
-    i = 3_int64
+    n = 3
+    i = 1
 
-    do while (i*i <= n)
-        if (mod(n, i) == 0) then
-            if (is_prime(i)) then
-                d = i
-            end if
+    do while (i < 10001)
+        if (is_prime(n)) then
+            p = n
+            i = i + 1
         end if
 
-        i = i + 2_int64
+        n = n + 2
     end do
 
-    print "(I0)", d
+    print "(I0)", p
 end program main
