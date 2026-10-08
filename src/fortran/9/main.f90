@@ -9,7 +9,7 @@ program main
         do b = 1, 1000
             do c = 1, 1000
                 if (a**2 + b**2 == c**2 .and. a + b + c == 1000) then
-                    prod = a * b * c
+                    prod = a*b*c
 
                     exit outer
                 end if
